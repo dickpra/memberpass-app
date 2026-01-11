@@ -1,0 +1,260 @@
+/* public/css/membership.css */
+
+/* --- GRID LAYOUT --- */
+.membership-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 2.5rem;
+    padding: 2rem 0.5rem;
+    align-items: center; /* Center vertical */
+}
+
+@media (min-width: 768px) {
+    .membership-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* --- BASE CARD --- */
+.pricing-card {
+    position: relative;
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Efek membal saat hover */
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.pricing-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+    z-index: 20;
+}
+
+/* --- CARD HEADER (Gradient Blocks) --- */
+.card-header {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: white;
+    clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%); /* Potongan miring estetik */
+    margin-bottom: -1rem; /* Kompensasi potongan miring */
+}
+
+.card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.card-header .price-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.card-header .price {
+    font-size: 2.5rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.card-header .currency {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 6px;
+    opacity: 0.9;
+}
+
+.card-header .period {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+}
+
+/* --- CARD BODY --- */
+.card-body {
+    padding: 2rem;
+    padding-top: 2.5rem; /* Jarak extra karena header miring */
+    background: white;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.features-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+.features-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.85rem;
+    line-height: 1.4;
+}
+
+.features-list svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* --- BUTTON CONTAINER --- */
+.card-action {
+    margin-top: auto;
+}
+
+.custom-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.875rem;
+}
+
+/* =========================================
+   THEMES (WARNA & GRADASI)
+   ========================================= */
+
+/* --- 1. BRONZE (Elegant Brown/Orange) --- */
+.pricing-card.bronze {
+    border-top: 4px solid #c2410c;
+}
+.pricing-card.bronze .card-header {
+    background: linear-gradient(135deg, #fdba74 0%, #c2410c 100%);
+}
+.pricing-card.bronze .features-list svg { color: #ea580c; }
+.pricing-card.bronze .custom-btn {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+}
+.pricing-card.bronze .custom-btn:hover {
+    background-color: #c2410c;
+    color: white;
+}
+
+/* --- 2. SILVER (Metallic Slate) --- */
+.pricing-card.silver {
+    border-top: 4px solid #475569;
+}
+.pricing-card.silver .card-header {
+    background: linear-gradient(135deg, #cbd5e1 0%, #475569 100%);
+}
+.pricing-card.silver .features-list svg { color: #475569; }
+.pricing-card.silver .custom-btn {
+    background-color: #f8fafc;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+.pricing-card.silver .custom-btn:hover {
+    background-color: #475569;
+    color: white;
+}
+
+/* --- 3. GOLD (The VIP - SHIMMER EFFECT) --- */
+.pricing-card.gold {
+    transform: scale(1.08); /* Lebih besar dari yang lain */
+    border: 2px solid #fbbf24;
+    box-shadow: 0 25px 50px -12px rgba(245, 158, 11, 0.4); /* Glow effect */
+    z-index: 10;
+}
+
+.pricing-card.gold .card-header {
+    /* Gradasi Emas Mewah */
+    background: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #854d0e 100%);
+    color: #422006; /* Text coklat tua agar kontras */
+}
+
+.pricing-card.gold .card-header h3, 
+.pricing-card.gold .card-header .price {
+    text-shadow: none; /* Gold text clean */
+}
+
+/* --- TIPE: GREENCARD --- */
+.pricing-card.green .card-header {
+    background: linear-gradient(135deg, #22c55e 0%, #15803d 100%); /* Green Gradient */
+}
+.pricing-card.green .features-list svg { color: #15803d; }
+.pricing-card.green .custom-btn {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #22c55e;
+}
+.pricing-card.green .custom-btn:hover {
+    background-color: #15803d;
+    color: white;
+}
+
+/* Badge Popular */
+.popular-badge {
+    position: absolute;
+    top: 15px;
+    right: -30px;
+    background: #422006;
+    color: #fef08a;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.5rem 3rem;
+    transform: rotate(45deg);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    z-index: 30;
+}
+
+.pricing-card.gold .features-list svg { color: #d97706; }
+
+/* Tombol Gold yang Stand Out */
+.pricing-card.gold .custom-btn {
+    background: linear-gradient(90deg, #eab308, #ca8a04);
+    color: white;
+    box-shadow: 0 4px 15px rgba(234, 179, 8, 0.4);
+}
+.pricing-card.gold .custom-btn:hover {
+    background: linear-gradient(90deg, #ca8a04, #a16207);
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.6);
+}
+
+/* --- ANIMASI KILAUAN (SHIMMER) UNTUK GOLD --- */
+.pricing-card.gold::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -150%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to right, 
+        rgba(255,255,255,0) 0%, 
+        rgba(255,255,255,0.4) 50%, 
+        rgba(255,255,255,0) 100%
+    );
+    transform: skewX(-25deg);
+    animation: shine 4s infinite; /* Animasi berjalan selamanya */
+    pointer-events: none; /* Agar tidak mengganggu klik */
+    z-index: 50;
+}
+
+@keyframes shine {
+    0% { left: -150%; }
+    20% { left: 150%; } /* Kilau lewat cepat */
+    100% { left: 150%; } /* Jeda lama sebelum kilau lagi */
+}

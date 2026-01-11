@@ -1,0 +1,102 @@
+/* --- LAYOUT --- */
+.membership-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* --- CARD STRUCTURE --- */
+.pricing-card {
+    position: relative;
+    background: white;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    padding: 2.5rem;
+    color: white;
+    text-align: center;
+    position: relative;
+}
+
+.card-body {
+    padding: 2rem;
+    background: white;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- TIPE 1: GREENCARD (Public) --- */
+.pricing-card.green {
+    border-top: 5px solid #22c55e;
+    margin-top: 1rem; /* jarak aman */
+}
+.pricing-card.green .card-header {
+    background: linear-gradient(135deg, #16a34a 0%, #14532d 100%);
+    clip-path: ellipse(150% 100% at 50% 0%); /* Lengkungan bawah */
+}
+.pricing-card.green h3 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; }
+.pricing-card.green .price-tag { font-size: 3rem; font-weight: 900; }
+.pricing-card.green .sub-text { opacity: 0.9; font-size: 0.9rem; margin-top: 0.5rem; }
+.pricing-card.green .btn-action {
+    background: #16a34a; color: white;
+    padding: 1rem; border-radius: 0.75rem; font-weight: bold; width: 100%;
+    margin-top: auto; border: none; cursor: pointer; transition: 0.3s;
+}
+.pricing-card.green .btn-action:hover { background: #14532d; }
+
+
+/* --- TIPE 2: VIP LIFETIME (Hidden/Admin Only) --- */
+.pricing-card.vip-lifetime {
+    background: #0f172a; /* Dark Slate / Black */
+    border: 1px solid #334155;
+    color: white;
+    margin-top: 1rem; /* jarak aman */
+}
+.pricing-card.vip-lifetime .card-header {
+    background: linear-gradient(45deg, #000000, #1e293b);
+    border-bottom: 1px solid #334155;
+    padding-bottom: 3rem;
+}
+.pricing-card.vip-lifetime h3 {
+    background: linear-gradient(to right, #fbbf24, #d97706);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem; font-weight: 900; text-transform: uppercase;
+}
+.pricing-card.vip-lifetime .badge-infinite {
+    position: absolute; top: 1rem; right: 1rem;
+    background: linear-gradient(90deg, #d97706, #fbbf24);
+    color: black; font-weight: bold; font-size: 0.7rem;
+    padding: 0.25rem 0.75rem; border-radius: 99px;
+}
+.pricing-card.vip-lifetime .card-body {
+    background: #0f172a; /* Body juga gelap */
+    color: #cbd5e1;
+}
+/* Efek Hologram Gerak */
+.pricing-card.vip-lifetime::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(115deg, transparent 40%, rgba(255,215,0,0.1) 50%, transparent 60%);
+    background-size: 200% 100%;
+    animation: hologram 5s infinite linear;
+    pointer-events: none;
+}
+@keyframes hologram { 0% {background-position: 200% 0;} 100% {background-position: -200% 0;} }
+
+/* Feature List Styling */
+.features-list { list-style: none; padding: 0; margin-bottom: 2rem; }
+.features-list li { display: flex; align-items: center; margin-bottom: 0.75rem; font-size: 1rem; }
+.pricing-card.green .features-list svg { color: #16a34a; width: 1.25rem; margin-right: 0.5rem; }
+.pricing-card.vip-lifetime .features-list svg { color: #fbbf24; width: 1.25rem; margin-right: 0.5rem; }

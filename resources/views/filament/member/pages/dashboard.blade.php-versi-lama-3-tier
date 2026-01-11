@@ -1,0 +1,248 @@
+<x-filament-panels::page>
+    @php
+        $user = auth()->user();
+        $settings = \App\Models\GeneralSetting::first();
+    @endphp
+
+    {{-- KONDISI 1: User Baru (Looping Paket Dinamis) --}}
+    @if($user->status === 'registered')
+        
+        <div class="membership-grid">
+            
+    @php
+        // Urutkan: Bronze -> Silver -> Gold (Invite only di akhir)
+        $tiers = \App\Models\MembershipTier::where('is_active', true)
+                    ->orderByRaw("CASE WHEN LOWER(name) = 'gold' OR is_invitation_only = 1 THEN 1 ELSE 0 END")
+                    ->orderBy('price', 'asc')
+                    ->get();
+    @endphp
+
+    @foreach($tiers as $tier)
+        
+        <div class="pricing-card {{ $tier->css_class }}">
+            
+            {{-- Badge untuk Gold --}}
+            @if($tier->is_invitation_only || $tier->css_class === 'gold')
+                <div class="popular-badge">VIP MEMBER</div>
+            @endif
+
+            <div class="card-header">
+                <h3>{{ $tier->name }}</h3>
+                
+                <div class="price-container">
+                    @if($tier->is_invitation_only)
+                        <span class="price" style="font-size: 1.8rem;">Exclusive</span>
+                    @else
+                        <span class="currency">{{ $settings->currency }}</span>
+                        {{-- Format angka ribuan (e.g. 150,000) --}}
+                        <span class="price">{{ number_format($tier->price, 0, ',', '.') }}</span>
+                    @endif
+                </div>
+                
+                <div class="period">
+                    {{ $tier->is_invitation_only ? 'By Invitation' : 'Per Year' }}
+                </div>
+            </div>
+
+            <div class="card-body">
+                <ul class="features-list">
+                    @if(is_array($tier->benefits) && count($tier->benefits) > 0)
+                        @foreach($tier->benefits as $benefit)
+                            @if(is_string($benefit))
+                                <li>
+                                    {{-- Icon Check --}}
+                                    @if($tier->css_class === 'gold')
+                                        <x-heroicon-s-star /> {{-- Bintang untuk Gold --}}
+                                    @else
+                                        <x-heroicon-s-check-circle /> 
+                                    @endif
+                                    {{ $benefit }}
+                                </li>
+                            @elseif(is_array($benefit) && isset($benefit['text']))
+                                <li>
+                                    <x-heroicon-s-check-circle /> 
+                                    {{ $benefit['text'] }}
+                                </li>
+                            @endif
+                        @endforeach
+                    @else
+                        <li class="italic opacity-50">No benefits listed.</li>
+                    @endif
+                </ul>
+
+                <div class="card-action">
+                    {{-- TOMBOL CUSTOM --}}
+                    {{-- Kita trigger action selectTierAction lewat wire:click --}}
+                    <button 
+                        type="button"
+                        wire:click="mountAction('selectTier', {{ json_encode(['id' => $tier->id, 'name' => $tier->name]) }})"
+                        class="custom-btn"
+                    >
+                        {{ $tier->is_invitation_only ? 'Request Access' : 'Choose Plan' }}
+                    </button>
+                    
+                    {{-- Panggil action definition agar wire:click di atas berfungsi --}}
+                    {{-- {{ ($this->selectTierAction)(['id' => $tier->id, 'name' => $tier->name]) }} --}}
+                </div>
+            </div>
+        </div>
+    @endforeach
+
+</div>
+
+    {{-- KONDISI 2: Menunggu Pembayaran --}}
+    @elseif($user->status === 'waiting_payment')
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {{-- Kiri: Info Tagihan --}}
+            <div class="md:col-span-1 space-y-6">
+                <div class="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+                    <h2 class="text-lg font-bold mb-4 text-gray-800">Order Summary</h2>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-500">Package</span>
+                        <span class="font-bold text-primary-600">{{ $user->membership_type }}</span>
+                    </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-gray-500">Total</span>
+                        @php $payment = \App\Models\Payment::where('user_id', $user->id)->latest()->first(); @endphp
+                        <span class="font-bold text-xl">{{ $settings->currency }} {{ number_format($payment->amount ?? 0) }}</span>
+                    </div>
+                    
+                    <div class="flex flex-col gap-3 pt-4 border-t">
+                         {{ $this->downloadInvoiceAction }}
+                         {{ $this->cancelOrderAction }}
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-xl border bg-blue-50 border-blue-100 text-sm">
+                     <h2 class="text-base font-bold mb-3 text-blue-900 border-b border-blue-200 pb-2">
+                         Payment Details
+                     </h2>
+                     
+                     <div class="mb-4">
+                         <p class="text-xs text-blue-500 uppercase tracking-wider font-semibold">Bank Name</p>
+                         <p class="font-bold text-lg text-gray-800">{{ $settings->bank_name }}</p>
+                     </div>
+                     
+                     <div class="mb-4">
+                         <p class="text-xs text-blue-500 uppercase tracking-wider font-semibold">Account Number</p>
+                         <div class="flex items-center gap-2">
+                            <p class="font-mono text-xl font-bold text-gray-900 bg-white px-2 py-1 rounded border border-blue-100 inline-block">
+                                {{ $settings->bank_account_number }}
+                            </p>
+                         </div>
+                     </div>
+
+                     <div class="mb-4">
+                         <p class="text-xs text-blue-500 uppercase tracking-wider font-semibold">Beneficiary Name</p>
+                         <p class="font-bold text-gray-800">{{ $settings->bank_account_owner }}</p>
+                     </div>
+
+                     @if($settings->bank_swift_code || $settings->bank_city)
+                     <div class="mt-4 pt-4 border-t border-blue-200">
+                         <p class="text-xs font-bold text-blue-800 mb-2">INTERNATIONAL TRANSFER INFO</p>
+                         
+                         <div class="grid grid-cols-2 gap-2">
+                             @if($settings->bank_swift_code)
+                             <div>
+                                 <p class="text-xs text-blue-500">SWIFT / BIC</p>
+                                 <p class="font-mono font-bold">{{ $settings->bank_swift_code }}</p>
+                             </div>
+                             @endif
+
+                             @if($settings->bank_city)
+                             <div>
+                                 <p class="text-xs text-blue-500">Bank Branch/City</p>
+                                 <p class="font-bold">{{ $settings->bank_city }}</p>
+                             </div>
+                             @endif
+                         </div>
+
+                         @if($settings->organization_address)
+                         <div class="mt-3">
+                             <p class="text-xs text-blue-500">Beneficiary Address</p>
+                             <p class="text-xs text-gray-700 leading-relaxed">{{ $settings->organization_address }}</p>
+                         </div>
+                         @endif
+                     </div>
+                     @endif
+                </div>
+            </div>
+
+            {{-- Kanan: Form Upload --}}
+            <div class="md:col-span-2 p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+                <h2 class="text-lg font-bold mb-4">Confirm Payment</h2>
+                <x-filament-panels::form wire:submit="submitPayment">
+                    {{ $this->form }}
+                    <div class="mt-6 flex justify-end">
+                        <x-filament::button type="submit" size="lg">
+                            Submit Payment Proof
+                        </x-filament::button>
+                    </div>
+                </x-filament-panels::form>
+            </div>
+        </div>
+
+    @elseif($user->status === 'cancellation_requested')
+         <div class="p-12 text-center bg-white rounded-xl shadow border border-red-200">
+            <h2 class="text-2xl font-bold text-red-600">Cancellation Requested</h2>
+            <p class="text-gray-500 mt-2">Waiting for admin approval.</p>
+        </div>
+
+    @elseif($user->status === 'waiting_verification' || $user->status === 'waiting_admin_decision')
+         <div class="p-12 text-center bg-white rounded-xl shadow">
+            <h2 class="text-2xl font-bold text-yellow-600">Verification in Process</h2>
+            <p class="text-gray-500 mt-2">Admin is reviewing your submission.</p>
+        </div>
+
+    {{-- KONDISI: PEMBAYARAN DITOLAK (REJECTED) --}}
+    @elseif($user->status === 'payment_rejected')
+        @php
+            // Ambil payment terakhir untuk melihat alasan penolakan
+            $lastPayment = \App\Models\Payment::where('user_id', $user->id)->latest()->first();
+        @endphp
+
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-red-50 border-l-4 border-red-500 p-6 rounded-r-lg shadow-sm mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <x-heroicon-s-x-circle class="h-8 w-8 text-red-500" />
+                    </div>
+                    <div class="ml-4 w-full">
+                        <h3 class="text-xl font-bold text-red-800">Pembayaran Ditolak</h3>
+                        <p class="mt-1 text-sm text-red-700">
+                            Maaf, admin tidak dapat memverifikasi pembayaran Anda sebelumnya.
+                        </p>
+                        
+                        <div class="mt-4 p-4 bg-white rounded border border-red-200">
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">ALASAN PENOLAKAN:</p>
+                            <p class="text-red-900 font-medium italic">
+                                "{{ $lastPayment->admin_note ?? 'Tidak ada catatan dari admin.' }}"
+                            </p>
+                        </div>
+
+                        <div class="mt-6">
+                            {{ $this->tryAgainAction }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 text-center opacity-75">
+                <p class="text-sm text-gray-500">Info Transaksi Sebelumnya:</p>
+                <p class="font-bold text-gray-700">
+                    {{ $lastPayment->currency }} {{ number_format($lastPayment->amount) }}
+                    <span class="text-xs font-normal">({{ $lastPayment->created_at->format('d M Y') }})</span>
+                </p>
+            </div>
+        </div>
+
+    @elseif($user->status === 'active')
+        <div class="p-6 bg-green-50 rounded-xl border border-green-200 text-center">
+             <h2 class="text-2xl font-bold text-green-700">Membership Active</h2>
+             <p class="mt-2 text-green-600">Welcome, {{ $user->name }}!</p>
+             <p class="text-sm text-gray-500">Member ID: {{ $user->member_id }}</p>
+        </div>
+    @endif
+</x-filament-panels::page>
