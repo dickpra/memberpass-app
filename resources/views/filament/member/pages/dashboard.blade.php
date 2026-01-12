@@ -152,6 +152,10 @@
                             && $user->membership_type !== 'VIP Lifetime';
         }
     @endphp
+    {{-- Ambil Bank dari Tabel Baru --}}
+    @php
+        $banks = \App\Models\BankAccount::where('is_active', true)->get();
+    @endphp
 
     {{-- 3. BANNER RENEWAL (Merah) --}}
     @if($showRenewal && $expiry)
@@ -260,22 +264,104 @@
                         </div>
                     </div>
                     
-                    <div class="p-6 rounded-xl border bg-blue-50 border-blue-100 text-sm">
-                         <h2 class="text-base font-bold mb-3 text-blue-900 border-b border-blue-200 pb-2">Transfer Destination</h2>
-                         <div class="mb-4">
-                             <p class="text-xs text-blue-500 uppercase tracking-wider font-semibold">Bank Name</p>
-                             <p class="font-bold text-lg text-gray-800">{{ $settings->bank_name ?? 'BCA' }}</p>
-                         </div>
-                         <div class="mb-4">
-                             <p class="text-xs text-blue-500 uppercase tracking-wider font-semibold">Account Number</p>
-                             <p class="font-mono text-xl font-bold text-gray-900 bg-white px-2 py-1 rounded border border-blue-100 inline-block">
-                                {{ $settings->bank_account_number ?? '123456' }}
+                    {{-- BOX REKENING & LEGALITAS (UPDATED) --}}
+                    <div class="p-6 rounded-xl border bg-blue-50 border-blue-100 text-sm shadow-sm">
+                         <h2 class="text-base font-bold mb-4 text-blue-900 border-b border-blue-200 pb-2">
+                             Transfer Destination
+                         </h2>
+
+                         {{-- 1. INFO PENERIMA (ORGANIZATION / LEGAL) --}}
+                         <div class="mb-4 bg-white/60 p-3 rounded border border-blue-100">
+                             <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">Organization Name</p>
+                             
+                             {{-- Nama PT / Organisasi --}}
+                             <p class="font-bold text-gray-900 text-sm">
+                                 {{ $settings->organization_name ?? 'WFIED Management' }}
                              </p>
+                             
+                             {{-- Alamat Fisik (Jika ada) --}}
+                             @if(!empty($settings->organization_address))
+                                 <p class="text-xs text-gray-500 mt-1 leading-relaxed">
+                                     {{ $settings->organization_address }}
+                                 </p>
+                             @endif
+
+                             {{-- NPWP / TAX (Jika ada) --}}
+                             @if(!empty($settings->tax_number))
+                                 <div class="mt-2 inline-block bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-200">
+                                     TAX/NPWP: {{ $settings->tax_number }}
+                                 </div>
+                             @endif
                          </div>
-                         <div class="mb-4">
-                             <p class="text-xs text-blue-500 uppercase tracking-wider font-semibold">Beneficiary</p>
-                             <p class="font-bold text-gray-800">{{ $settings->bank_account_owner ?? 'PT WFIED' }}</p>
-                         </div>
+
+                         {{-- 2. LIST REKENING BANK --}}
+                         <h3 class="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-2 mt-4">
+                             Available Accounts
+                         </h3>
+
+                         @php
+                             // Ambil Bank yang Aktif
+                             $banks = \App\Models\BankAccount::where('is_active', true)->get();
+                         @endphp
+
+                         @if($banks->count() > 0)
+                             <div class="space-y-3">
+                                 @foreach($banks as $bank)
+                                     <div class="bg-white p-3 rounded-lg border border-blue-200 shadow-sm relative group hover:border-blue-400 transition">
+                                         
+                                         {{-- Header: Logo & Nama Bank --}}
+                                         <div class="flex items-center gap-3 mb-2 border-b border-gray-100 pb-2">
+                                             {{-- @if($bank->logo)
+                                                 <img src="{{ asset('storage/'.$bank->logo) }}" class="h-6 w-auto object-contain" alt="{{ $bank->bank_name }}">
+                                             @else
+                                                 <div class="h-6 w-6 bg-gray-100 rounded flex items-center justify-center text-[8px] font-bold text-gray-500">BANK</div>
+                                             @endif --}}
+                                             
+                                             <div>
+                                                 <p class="font-bold text-gray-800 text-xs uppercase">{{ $bank->bank_name }}</p>
+                                                 @if($bank->swift_code)
+                                                     <p class="text-[9px] text-gray-400 font-mono">SWIFT: {{ $bank->swift_code }}</p>
+                                                 @endif
+                                             </div>
+                                         </div>
+
+                                         {{-- Body: No Rekening & Kota --}}
+                                         <div class="space-y-1">
+                                             <div class="flex justify-between items-center">
+                                                 <span class="text-gray-500 text-xs">Account No.</span>
+                                                 <div class="flex items-center gap-2">
+                                                     <span class="font-mono font-bold text-base text-blue-700">
+                                                         {{ $bank->account_number }}
+                                                     </span>
+                                                     {{-- Tombol Copy --}}
+                                                     <button type="button" 
+                                                        onclick="navigator.clipboard.writeText('{{ $bank->account_number }}'); alert('Copied!')" 
+                                                        class="text-gray-300 hover:text-blue-600 transition" title="Copy Number">
+                                                         <x-heroicon-m-clipboard class="w-4 h-4"/>
+                                                     </button>
+                                                 </div>
+                                             </div>
+
+                                             <div class="flex justify-between items-start">
+                                                 <span class="text-gray-500 text-xs">Holder</span>
+                                                 <span class="text-xs font-medium text-gray-800 text-right">{{ $bank->account_owner }}</span>
+                                             </div>
+
+                                             @if($bank->bank_city)
+                                                 <div class="flex justify-between items-center pt-1 mt-1 border-t border-gray-50">
+                                                     <span class="text-gray-400 text-[10px]">Branch/City</span>
+                                                     <span class="text-gray-500 text-[10px]">{{ $bank->bank_city }}</span>
+                                                 </div>
+                                             @endif
+                                         </div>
+                                     </div>
+                                 @endforeach
+                             </div>
+                         @else
+                             <div class="text-center py-4 bg-white rounded border border-dashed border-gray-300">
+                                 <p class="text-xs text-gray-500 italic">No bank accounts available.</p>
+                             </div>
+                         @endif
                     </div>
                 </div>
 

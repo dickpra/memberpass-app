@@ -3,13 +3,12 @@
 namespace App\Filament\Admin\Pages;
 
 use App\Models\GeneralSetting;
-use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
+use Filament\Actions\Action;
 
 class ManageSettings extends Page implements HasForms
 {
@@ -17,21 +16,19 @@ class ManageSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'General Settings';
-    protected static ?string $title = 'Application Settings';
+    protected static ?string $title = 'Website & Payment Settings';
     
-    // File view blade yang akan dirender
     protected static string $view = 'filament.admin.pages.manage-settings';
 
-    // Variabel untuk menampung data form
+    // 1. WAJIB: Variabel penampung data form
     public ?array $data = []; 
-    
-    // Saat halaman dibuka (Mount)
-    public function mount(): void 
+
+    public function mount(): void
     {
-        // Ambil data pertama, atau buat baru jika kosong
+        // Ambil data setting pertama, atau buat baru jika kosong
         $settings = GeneralSetting::firstOrNew();
         
-        // Isi form dengan data dari database
+        // Isi form dengan data yang ada di database
         $this->form->fill($settings->attributesToArray());
     }
 
@@ -39,81 +36,134 @@ class ManageSettings extends Page implements HasForms
     {
         return $form
             ->schema([
-                // --- TAB 1: Organization ---
-                Forms\Components\Section::make('Organization Details')
-                    ->schema([
-                        Forms\Components\TextInput::make('organization_name')
-                            ->required(),
-                        Forms\Components\Textarea::make('organization_address')
-                            ->rows(3),
-                        Forms\Components\TextInput::make('vat_number')
-                            ->label('Tax/VAT/NPWP Number'),
-                    ])->columns(2),
+                \Filament\Forms\Components\Tabs::make('Settings')
+                    ->tabs([
+                        
+                        // TAB 1: IDENTITAS PERUSAHAAN (PENTING BUAT INVOICE)
+                    \Filament\Forms\Components\Tabs\Tab::make('Legal & Invoice')
+                        ->icon('heroicon-o-building-office-2')
+                        ->schema([
+                            \Filament\Forms\Components\Section::make('Identitas Organisasi')
+                                ->description('Data ini akan muncul di Header Invoice dan Info Transfer Member.')
+                                ->schema([
+                                    \Filament\Forms\Components\TextInput::make('organization_name')
+                                        ->label('Organization / Company Name')
+                                        ->placeholder('Contoh: PT WFIED INDONESIA')
+                                        ->required()
+                                        ->columnSpanFull(), // Lebar penuh biar panjang muat
+                                    
+                                    \Filament\Forms\Components\TextInput::make('tax_number')
+                                        ->label('Tax ID / NPWP (Opsional)')
+                                        ->placeholder('Contoh: 12.345.678.9-012.000'),
 
-                // --- TAB 2: Membership Pricing ---
-                // Forms\Components\Section::make('Membership Pricing')
-                //     ->description('Harga default untuk pendaftaran membership')
-                //     ->schema([
-                //         Forms\Components\TextInput::make('gold_price')
-                //             ->label('Gold Price (Base)')
-                //             ->numeric()
-                //             ->prefix('IDR'),
-                //         Forms\Components\TextInput::make('silver_price')
-                //             ->label('Silver Price')
-                //             ->numeric()
-                //             ->prefix('IDR')
-                //             ->required(),
-                //         Forms\Components\TextInput::make('bronze_price')
-                //             ->label('Bronze Price')
-                //             ->numeric()
-                //             ->prefix('IDR')
-                //             ->required(),
-                //     ])->columns(3),
+                                    \Filament\Forms\Components\Textarea::make('organization_address')
+                                        ->label('Alamat Lengkap')
+                                        ->rows(3)
+                                        ->columnSpanFull(),
+                                ]),
+                        ]),
 
-                // --- TAB 3: Bank Information ---
-                Forms\Components\Section::make('Bank Account Info')
-                    ->description('Rekening tujuan transfer member')
-                    ->schema([
-                        Forms\Components\TextInput::make('bank_name')
-                            ->required(),
-                        Forms\Components\TextInput::make('bank_account_number')
-                            ->required(),
-                        Forms\Components\TextInput::make('bank_account_owner')
-                            ->label('Account Holder Name')
-                            ->required(),
-                        Forms\Components\TextInput::make('bank_city'),
-                        Forms\Components\TextInput::make('bank_swift_code')
-                            ->label('SWIFT/BIC Code (International)'),
-                        Forms\Components\Select::make('currency')
-                            ->options([
-                                'IDR' => 'IDR (Indonesian Rupiah)',
-                                'USD' => 'USD (US Dollar)',
-                                'EUR' => 'EUR (Euro)',
-                            ])
-                            ->default('IDR')
-                            ->required(),
-                    ])->columns(2),
+                    // TAB 2: TAMPILAN WEBSITE (CMS)
+                    \Filament\Forms\Components\Tabs\Tab::make('Website / CMS')
+                        ->icon('heroicon-o-globe-alt')
+                        ->schema([
+                            \Filament\Forms\Components\TextInput::make('site_title')
+                                ->label('Nama Aplikasi')
+                                ->default('WFIED Membership')
+                                ->required(),
+
+                            \Filament\Forms\Components\FileUpload::make('site_logo')
+                                ->label('Logo Aplikasi')
+                                ->image()
+                                ->directory('settings') // Disimpan di storage/app/public/settings
+                                ->imageEditor(),
+
+                            \Filament\Forms\Components\Textarea::make('site_description')
+                                ->label('Meta Description')
+                                ->rows(2),
+
+                            \Filament\Forms\Components\TextInput::make('footer_text')
+                                ->label('Teks Footer')
+                                ->placeholder('Copyright © 2026 WFIED'),
+                        ]),
+
+                    // TAB 3: PENGUMUMAN DASHBOARD
+                    \Filament\Forms\Components\Tabs\Tab::make('Member Dashboard')
+                        ->icon('heroicon-o-megaphone')
+                        ->schema([
+                            \Filament\Forms\Components\Section::make('Announcement Bar')
+                                ->schema([
+                                    \Filament\Forms\Components\Toggle::make('announcement_active')
+                                        ->label('Aktifkan Pengumuman')
+                                        ->helperText('Jika aktif, kotak biru berisi pesan akan muncul di dashboard member.'),
+                                    
+                                    \Filament\Forms\Components\Textarea::make('announcement_text')
+                                        ->label('Isi Pesan')
+                                        ->rows(3)
+                                        ->placeholder('Contoh: Sistem sedang maintenance pada hari Sabtu...'),
+                                ]),
+                        ]),
+
+                    // TAB 4: KONTAK SUPPORT
+                    \Filament\Forms\Components\Tabs\Tab::make('Support Contact')
+                        ->icon('heroicon-o-chat-bubble-left-right')
+                        ->schema([
+                            \Filament\Forms\Components\TextInput::make('support_phone')
+                                ->label('WhatsApp Admin')
+                                ->prefix('+62')
+                                ->placeholder('812345678')
+                                ->helperText('Masukkan nomor tanpa angka 0 di depan.'),
+
+                            \Filament\Forms\Components\TextInput::make('support_email')
+                                ->label('Email Support')
+                                ->email(),
+                        ]),
+                    
+                    // TAB 5: SYSTEM
+                    \Filament\Forms\Components\Tabs\Tab::make('System')
+                        ->icon('heroicon-o-cog')
+                        ->schema([
+                            \Filament\Forms\Components\TextInput::make('currency')
+                                ->label('Mata Uang Default')
+                                ->default('IDR')
+                                ->readOnly(),
+                        ]),
+                ])
+                ->columnSpanFull()
             ])
-            ->statePath('data'); // Sambungkan form ke variabel $data
-    } 
-    
-    // Fungsi saat tombol Save ditekan
+            // 2. WAJIB: Hubungkan form ke variabel $data
+            ->statePath('data'); 
+    }
+
+    // 3. Action Save
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label(__('Save Changes'))
+                ->submit('save'),
+        ];
+    }
+
     public function save(): void
     {
-        // Ambil data dari form
+        // 1. Ambil data dari form
         $state = $this->form->getState();
-        
-        // Cari data ID 1 (Singleton)
+
+        // --- FIX BUG: "Column cannot be null" ---
+        // Kita paksa konversi ke Boolean. 
+        // Jika null/kosong, dia akan otomatis jadi false (0).
+        $state['announcement_active'] = (bool) ($state['announcement_active'] ?? false);
+
+        // 2. Simpan ke Database
         $settings = GeneralSetting::first();
-        
         if ($settings) {
             $settings->update($state);
         } else {
             GeneralSetting::create($state);
         }
-        
-        // Tampilkan notifikasi sukses
-        Notification::make() 
+
+        Notification::make()
             ->title('Settings saved successfully')
             ->success()
             ->send();

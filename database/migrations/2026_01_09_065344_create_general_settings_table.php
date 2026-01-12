@@ -14,21 +14,28 @@ return new class extends Migration
         Schema::create('general_settings', function (Blueprint $table) {
             $table->id();
             
-            // --- A. Organization Info ---
-            $table->string('organization_name')->default('My Organization');
-            $table->text('organization_address')->nullable();
-            $table->string('vat_number')->nullable(); // NPWP / VAT
+            // 1. CMS / Public Info
+            $table->string('site_title')->default('WFIED Membership');
+            $table->text('site_description')->nullable();
+            $table->string('site_logo')->nullable();
+            $table->string('footer_text')->nullable();
             
-            // --- B. Bank Detail ---
-            $table->string('bank_name')->nullable(); // BCA, Mandiri, JP Morgan
-            $table->string('bank_account_number')->nullable();
-            $table->string('bank_account_owner')->nullable(); // Atas Nama
-            $table->string('bank_city')->nullable(); // Cabang/Kota
+            // 2. Organization / Legal Info (Untuk Invoice)
+            $table->string('organization_name')->nullable();    // Nama PT
+            $table->text('organization_address')->nullable();   // Alamat Fisik
+            $table->string('tax_number')->nullable();           // NPWP / VAT
             
-            // --- C. International Info ---
-            $table->string('bank_swift_code')->nullable(); // Wajib utk internasional
-            $table->string('currency')->default('IDR'); // IDR / USD
+            // 3. Dashboard Announcement
+            $table->boolean('announcement_active')->default(true);
+            $table->text('announcement_text')->nullable();
             
+            // 4. Support Contact
+            $table->string('support_phone')->nullable(); // WhatsApp
+            $table->string('support_email')->nullable(); // Email
+            
+            // 5. System
+            $table->string('currency')->default('IDR');
+
             $table->timestamps();
         });
     }

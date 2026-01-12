@@ -2,20 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Models\Payment;
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
+use App\Http\Controllers\HomeController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
+
+// Halaman Depan (Landing Page)
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Route login bawaan Filament (biarkan saja, biasanya otomatis)
 Route::get('/invoice/{payment}', function (Payment $payment) {
     // Keamanan: Pastikan yang buka invoice adalah pemiliknya atau admin
     if (auth()->id() !== $payment->user_id && auth()->user()->role !== 'admin') {

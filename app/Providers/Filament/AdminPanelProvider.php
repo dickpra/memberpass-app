@@ -38,8 +38,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                // Widgets\AccountWidget::class,
+                // Widgets\FilamentInfoWidget::class,
+                    // Daftarkan Widget Baru Kita (Biasanya otomatis, tapi untuk memastikan):
+                \App\Filament\Admin\Widgets\StatsOverview::class,
+                \App\Filament\Admin\Widgets\MemberGrowthChart::class,
+                \App\Filament\Admin\Widgets\LatestPayments::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -27,7 +27,7 @@ class MembershipTierResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
-                            ->placeholder('e.g. Silver'),
+                            ->placeholder('e.g. GreenCard'),
                             
                         Forms\Components\TextInput::make('price')
                             ->numeric()
@@ -39,7 +39,7 @@ class MembershipTierResource extends Resource
                             ->options([
                                 // 'bronze' => 'Bronze Style (Orange)',
                                 // 'silver' => 'Silver Style (Gray)',
-                                'gold' => 'Gold Style (Yellow)',
+                                // 'gold' => 'Gold Style (Yellow)',
                                 'green' => 'Green Style (Green)',
                                 // 'platinum' => 'Platinum Style (Black/Blue)', // Bisa tambah CSS nanti
                             ])
