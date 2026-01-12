@@ -242,25 +242,50 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
             ->label('Batalkan Pesanan')
             ->color('danger')
             ->requiresConfirmation()
-            ->modalHeading('Batalkan Pesanan?')
             ->action(function () {
                 $user = Auth::user();
-                $payment = Payment::where('user_id', $user->id)->latest()->first();
                 
-                // Skenario 1: Belum upload bukti (Admin belum lihat) -> Hapus Langsung
-                if ($payment && $payment->status === 'pending_upload') {
-                    $payment->delete();
-                    $user->update(['status' => 'registered', 'membership_type' => null]);
-                    Notification::make()->title('Order cancelled.')->success()->send();
-                    return redirect()->to('/member');
+                // 1. Hapus Payment Sampah (Pending)
+                $user->payments()->where('status', 'pending_upload')->delete();
+
+                // 2. [FIX] LOGIC PINTAR PENGEMBALIAN STATUS
+                // Ambil status terakhir dari session
+                $prevStatus = session()->get('previous_member_status');
+
+                if ($prevStatus) {
+                    // A. JIKA SESSION ADA (Skenario Normal)
+                    // Kembalikan persis ke status sebelumnya.
+                    // Jika sebelumnya 'inactive' (dibanned admin), dia akan kembali 'inactive'.
+                    // Jika sebelumnya 'active' (cuma iseng klik renew), dia kembali 'active'.
+                    $user->update(['status' => $prevStatus]);
+                    
+                    // Hapus session biar bersih
+                    session()->forget('previous_member_status');
+                    
+                } else {
+                    // B. JIKA SESSION HILANG (Skenario Logout/Ganti Device/Session Expired)
+                    // Kita pakai logic fallback (cadangan) yang LEBIH AMAN.
+                    
+                    // Cek 1: Apakah dia punya tanggal expired di masa depan?
+                    $hasFutureExpiry = $user->expiry_date && \Carbon\Carbon::parse($user->expiry_date)->isFuture();
+                    
+                    if ($hasFutureExpiry) {
+                        // Masih punya masa aktif. 
+                        // AMANNYA: Kembalikan ke ACTIVE.
+                        // RISIKO KECIL: Jika admin banned manual, dan user clear cache lalu cancel,
+                        // dia bisa lolos jadi active lagi. Tapi ini sangat jarang terjadi.
+                        $user->update(['status' => 'active']);
+                    } else {
+                        // Sudah expired atau user baru
+                        // Kembalikan ke REGISTERED agar pilih paket ulang (atau inactive)
+                        $user->update(['status' => 'registered']); 
+                        // Note: set 'registered' agar dia melihat tampilan pilih paket, 
+                        // kalau set 'inactive' dia melihat kartu mati. Terserah preferensi kamu.
+                    }
                 }
-                
-                // Skenario 2: Sudah upload bukti (Admin sudah lihat) -> Minta Izin
-                if ($payment && $payment->status === 'waiting_verification') {
-                    $user->update(['status' => 'cancellation_requested']);
-                    Notification::make()->title('Cancellation requested to Admin.')->success()->send();
-                    return redirect()->to('/member');
-                }
+
+                Notification::make()->title('Order Cancelled')->success()->send();
+                return redirect()->to('/member');
             });
     }
 
@@ -346,6 +371,120 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
                 Notification::make()->title('Silakan upload bukti baru.')->success()->send();
                 return redirect()->to('/member');
             });
+    }
+
+    public function renewMembershipAction(): Action
+    {
+        return Action::make('renewMembership')
+            ->label('Perpanjang / Aktifkan Kembali')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading('Konfirmasi Perpanjangan')
+            
+            // Tampilkan estimasi harga di Modal Konfirmasi
+            ->modalDescription(function() {
+                $greenTier = \App\Models\MembershipTier::where('name', 'GreenCard')->first();
+                if (!$greenTier) return 'Error: Paket tidak ditemukan.';
+
+                $now = \Carbon\Carbon::now();
+                $price = $this->calculateRenewalPrice($greenTier->price);
+                
+                $formattedPrice = number_format($price);
+                
+                // Pesan berbeda tergantung bulan
+                if ($now->month >= 11) {
+                    return "Anda akan memperpanjang untuk TAHUN DEPAN (Full 1 Tahun). Biaya: IDR {$formattedPrice}.";
+                } else {
+                    return "Anda melakukan perpanjangan di bulan berjalan. Biaya disesuaikan (Prorated) sisa tahun ini. Biaya: IDR {$formattedPrice}.";
+                }
+            })
+            
+            ->action(function () {
+                $user = \Illuminate\Support\Facades\Auth::user();
+                
+                // 1. SECURITY CHECK (Banned gak boleh renew)
+                if ($user->status === 'banned') {
+                    \Filament\Notifications\Notification::make()
+                        ->title('Access Denied')
+                        ->body('Akun Anda dibekukan. Hubungi Admin.')
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
+                // 2. Simpan Status Lama (untuk fitur Cancel)
+                session()->put('previous_member_status', $user->status);
+
+                // 3. Ambil Tier & Hitung Harga
+                $greenTier = \App\Models\MembershipTier::where('name', 'GreenCard')->first();
+                if (!$greenTier) {
+                    \Filament\Notifications\Notification::make()->title('Tier tidak ditemukan')->danger()->send();
+                    return;
+                }
+
+                // --- LOGIC HARGA BARU ---
+                $amount = $this->calculateRenewalPrice($greenTier->price);
+                $now = \Carbon\Carbon::now();
+                
+                // Tentukan Catatan Admin
+                if ($now->month >= 11) {
+                    $note = "Early Bird Renewal for " . ($now->year + 1);
+                } else {
+                    $note = "Late/Prorated Renewal (Remainder of " . $now->year . ")";
+                }
+
+                // 4. Buat Invoice
+                \App\Models\Payment::create([
+                    'user_id' => $user->id,
+                    'amount' => $amount, // Harga hasil hitungan prorated
+                    'currency' => 'IDR',
+                    'type' => 'renewal',
+                    'status' => 'pending_upload',
+                    'sender_name' => $user->name,
+                    'admin_note' => $note,
+                ]);
+
+                // 5. Update Status User
+                $user->update(['status' => 'waiting_payment']);
+
+                \Filament\Notifications\Notification::make()
+                    ->title('Invoice Dibuat')
+                    ->body("Total tagihan: IDR " . number_format($amount))
+                    ->success()
+                    ->send();
+                
+                return redirect()->to('/member');
+            });
+    }
+
+    // --- FUNGSI HITUNG MATEMATIKA (HELPER) ---
+    // Masukkan fungsi ini di dalam class Dashboard juga (paling bawah)
+    protected function calculateRenewalPrice($basePrice)
+    {
+        $now = \Carbon\Carbon::now();
+
+        // SKENARIO A: Bulan Nov & Des (Early Bird untuk Tahun Depan)
+        // Harga: Full 100%
+        if ($now->month >= 11) {
+            return $basePrice;
+        }
+
+        // SKENARIO B: Bulan Jan - Okt (Late Renewal / Prorated Tahun Ini)
+        // Harga: Dihitung sisa hari
+        $endOfYear = $now->copy()->endOfYear();
+        $daysInYear = $now->copy()->startOfYear()->diffInDays($endOfYear) + 1; // 365 atau 366
+        $remainingDays = $now->diffInDays($endOfYear) + 1;
+
+        // Rumus: (Sisa Hari / Total Hari Setahun) * Harga Dasar
+        $calculated = ($remainingDays / $daysInYear) * $basePrice;
+
+        // Pembulatan ke 1000 terdekat (supaya cantik, misal 45.230 jadi 46.000)
+        $rounded = ceil($calculated / 1000) * 1000;
+
+        // Rule Tambahan: Minimal bayar seharga 1 bulan (biar gak 0 rupiah kalau daftar 31 Des siang)
+        $minPrice = ceil(($basePrice / 12) / 1000) * 1000;
+        
+        return max($rounded, $minPrice);
     }
 
     

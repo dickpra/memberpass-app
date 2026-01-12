@@ -28,11 +28,13 @@ class MemberPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
+            ->brandName('WFIED Member')
             ->id('member')
             ->path('member')
             ->colors([
                 'primary' => Color::Blue,
             ])
+            ->topNavigation()
             ->login()
             ->registration(Register::class)
             ->discoverResources(in: app_path('Filament/Member/Resources'), for: 'App\\Filament\\Member\\Resources')

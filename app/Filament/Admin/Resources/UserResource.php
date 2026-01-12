@@ -10,7 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
-
+use Illuminate\Database\Eloquent\Builder;
 
 class UserResource extends Resource
 {
@@ -94,6 +94,7 @@ class UserResource extends Resource
                         'waiting_admin_decision' => 'warning', // Status request Gold
                         'payment_rejected' => 'danger',
                         'inactive' => 'danger',
+                        'banned' => 'danger',
                         'suspended' => 'danger',
                         default => 'gray',
                     }),
@@ -111,8 +112,10 @@ class UserResource extends Resource
 
                 Tables\Columns\TextColumn::make('expiry_date')
                     ->date('d M Y')
-                    ->label('Expired')
-                    ->sortable(),
+                    ->sortable()
+                    ->label('Expired Date')
+                    // Merahkan tanggal jika sudah lewat hari ini
+                    ->color(fn ($state) => $state < now() ? 'danger' : 'gray'),
             ])
             ->filters([
                 // Filter Status
@@ -121,7 +124,16 @@ class UserResource extends Resource
                         'active' => 'Active',
                         'waiting_admin_decision' => 'Requesting Gold/Verif',
                         'registered' => 'Registered',
-                    ]),
+                        'banned' => 'Banned',
+                        'inactive' => 'Inactive',
+                ])
+                ->label('Filter by Status'),
+
+            // --- FILTER TAHUN EXPIRED ---
+            // Memudahkan cek siapa yang habis tahun ini
+            Tables\Filters\Filter::make('expired_this_year')
+                ->query(fn (Builder $query) => $query->whereYear('expiry_date', date('Y')))
+                ->label('Expired Tahun Ini'),
             ])
             ->actions([
                 // Tables\Actions\EditAction::make(),
@@ -211,6 +223,52 @@ class UserResource extends Resource
                     ->action(function ($record) {
                         $record->update(['status' => 'inactive']);
                         \Filament\Notifications\Notification::make()->title('Member Deactivated')->warning()->send();
+                    }),
+                    // --- Action: BAN MEMBER (Suspend) ---
+                Tables\Actions\Action::make('ban_member')
+                    ->label('Ban / Suspend User') // Ganti label biar jelas
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Blokir User Ini?')
+                    ->modalDescription('User akan berstatus BANNED. Mereka tidak bisa login atau memperpanjang membership sampai Anda mengaktifkannya lagi.')
+                    // Muncul jika status BUKAN banned
+                    ->visible(fn ($record) => $record->status !== 'banned')
+                    ->action(function ($record) {
+                        // SET STATUS JADI 'banned'
+                        $record->update(['status' => 'banned']);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('User Banned Successfully')
+                            ->body('User kini tidak memiliki akses apapun.')
+                            ->danger()
+                            ->send();
+                    }),
+
+                // --- Action: UNBAN / ACTIVATE (Restore) ---
+                Tables\Actions\Action::make('activate_member')
+                    ->label('Unban / Activate')
+                    ->icon('heroicon-o-check-circle') // Ganti ikon centang
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Aktifkan Kembali User?')
+                    ->modalDescription('User akan kembali aktif dan bisa mengakses dashboard.')
+                    // Muncul jika status TIDAK active (bisa inactive atau banned)
+                    ->visible(fn ($record) => $record->status !== 'active' && $record->status !== 'banned')
+                    ->action(function ($record) {
+                        $tier = $record->membership_type ?: 'GreenCard';
+                        
+                        $record->update([
+                            'status' => 'active', // Kembalikan ke active
+                            'membership_type' => $tier,
+                            // Opsional: Reset expired ke akhir tahun ini jika perlu
+                            // 'expiry_date' => \Carbon\Carbon::now()->endOfYear(), 
+                        ]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('User Activated')
+                            ->success()
+                            ->send();
                     }),
                 // --- ACTION 2: MANUAL EXTEND (PERPANJANG MANUAL) ---
                 // Berguna jika ada masalah sistem atau bonus perpanjangan
