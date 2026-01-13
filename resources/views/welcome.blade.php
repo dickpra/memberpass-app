@@ -93,8 +93,8 @@
 
             {{-- Main Heading --}}
             <h1 class="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-6 leading-[1.1]">
-                Elevate Your Career with <br class="hidden md:block" />
-                <span class="text-gradient">Professional Network</span>
+                Unlock Your <br class="hidden md:block" />
+                <span class="text-gradient">Exclusive Privileges</span>
             </h1>
 
             <p class="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-slate-500 leading-relaxed">
@@ -177,9 +177,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 
                 @foreach($tiers as $tier)
-                    <div class="relative bg-white rounded-3xl p-8 shadow-sm border border-slate-200 flex flex-col hover:border-green-400 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                    <div class="relative rounded-3xl p-8 shadow-sm border border-slate-200 flex flex-col hover:border-green-400 hover:shadow-2xl hover:scale-105 transition-all duration-300
                         @if($loop->first)
-                            <div class="absolute top-0 right-0 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl">POPULAR</div>
+                            bg-gradient-to-br from-green-100 via-white to-green-50
+                        @else
+                            bg-gradient-to-br from-white via-green-50 to-white
+                        @endif
+                    ">
+                        @if($loop->first)
+                            <div class="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl shadow">POPULAR</div>
                         @endif
 
                         <h3 class="text-xl font-bold text-slate-900 uppercase tracking-wide">{{ $tier->name }}</h3>
@@ -201,7 +207,7 @@
                             @endif
                         </ul>
 
-                        <a href="{{ url('/member/register') }}" class="w-full block bg-slate-900 text-white text-center py-3.5 rounded-xl font-bold hover:bg-green-600 transition duration-300">
+                        <a href="{{ url('/member/register') }}" class="w-full block bg-green-600 text-white text-center py-3.5 rounded-xl font-bold hover:bg-green-700 transition duration-300 shadow-lg">
                             Get Started
                         </a>
                     </div>

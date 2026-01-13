@@ -18,6 +18,7 @@ class MembershipTierResource extends Resource
     protected static ?string $model = MembershipTier::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Settings Management';
 
     public static function form(Form $form): Form
     {

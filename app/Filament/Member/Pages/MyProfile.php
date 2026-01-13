@@ -31,7 +31,7 @@ class MyProfile extends Page implements HasForms
         return $form
             ->schema([
                 Forms\Components\Section::make('Informasi Pribadi')
-                    ->description('Foto ini akan digunakan pada ID Card Digital Anda.')
+                    // ->description('Foto ini akan digunakan pada ID Card Digital Anda.')
                     ->schema([
                         // UPLOAD FOTO PROFIL
                         // Forms\Components\FileUpload::make('avatar_url') // Pastikan ada kolom ini di DB atau pakai accessor

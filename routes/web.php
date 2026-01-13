@@ -3,7 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Models\Payment;
 use App\Http\Controllers\HomeController;
-
+use App\Models\GeneralSetting;
+use App\Models\BankAccount;
 
 
 // Halaman Depan (Landing Page)
@@ -16,7 +17,16 @@ Route::get('/invoice/{payment}', function (Payment $payment) {
         abort(403);
     }
 
-    $settings = \App\Models\GeneralSetting::first();
+    // 2. Ambil Settings
+    $settings = GeneralSetting::first();
 
-    return view('invoice', compact('payment', 'settings'));
+    // 3. AMBIL DATA BANKS (Inilah solusi errornya)
+    $banks = BankAccount::where('is_active', true)->get();
+
+    // 4. Kirim ke View 'invoice'
+    return view('invoice', [ // Pastikan nama view sesuai file kamu (invoice.blade.php)
+        'payment' => $payment,
+        'settings' => $settings,
+        'banks' => $banks, // <--- INI WAJIB ADA
+    ]);
 })->middleware('auth')->name('invoice.print');

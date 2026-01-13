@@ -455,6 +455,41 @@
                     </div>
                 </div>
             </div>
+        {{-- BLOK: PEMBAYARAN DITOLAK (REJECTED) --}}
+@elseif($user->status === 'payment_rejected')
+
+    <div class="p-6 rounded-xl bg-red-50 border border-red-200 shadow-sm animate-pulse">
+        <div class="flex items-start gap-4">
+            <div class="p-3 bg-red-100 rounded-full text-red-600">
+                <x-heroicon-o-x-circle class="w-8 h-8" />
+            </div>
+            
+            <div class="flex-1">
+                <h2 class="text-xl font-bold text-red-700 mb-1">Pembayaran Ditolak</h2>
+                <p class="text-red-600 mb-4">
+                    Maaf, pembayaran Anda belum dapat kami setujui.
+                </p>
+
+                {{-- Tampilkan Alasan Admin --}}
+                @if($latestPayment->admin_note)
+                    <div class="bg-white/50 p-3 rounded-lg border border-red-100 mb-4">
+                        <span class="text-xs font-bold text-red-500 uppercase">Alasan Penolakan:</span>
+                        <p class="text-red-800 font-medium mt-1">
+                            "{{ $latestPayment->admin_note }}"
+                        </p>
+                    </div>
+                @endif
+
+                <div class="flex gap-3 mt-4">
+                    {{-- Tombol Try Again --}}
+                    {{ $this->tryAgainAction }}
+                    
+                    {{-- Tombol Batalkan (Opsional) --}}
+                    {{ $this->cancelOrderAction }}
+                </div>
+            </div>
+        </div>
+    </div>
 
         {{-- ================================================= --}}
         {{-- ALUR 4: STATUS LAIN (WAITING VERIF / REJECTED)    --}}

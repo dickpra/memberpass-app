@@ -16,6 +16,8 @@ class ManageSettings extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'General Settings';
+    protected static ?string $navigationGroup = 'Settings Management';
+
     protected static ?string $title = 'Website & Payment Settings';
     
     protected static string $view = 'filament.admin.pages.manage-settings';
@@ -87,22 +89,22 @@ class ManageSettings extends Page implements HasForms
                                 ->placeholder('Copyright © 2026 WFIED'),
                         ]),
 
-                    // TAB 3: PENGUMUMAN DASHBOARD
-                    \Filament\Forms\Components\Tabs\Tab::make('Member Dashboard')
-                        ->icon('heroicon-o-megaphone')
-                        ->schema([
-                            \Filament\Forms\Components\Section::make('Announcement Bar')
-                                ->schema([
-                                    \Filament\Forms\Components\Toggle::make('announcement_active')
-                                        ->label('Aktifkan Pengumuman')
-                                        ->helperText('Jika aktif, kotak biru berisi pesan akan muncul di dashboard member.'),
+                    // // TAB 3: PENGUMUMAN DASHBOARD
+                    // \Filament\Forms\Components\Tabs\Tab::make('Member Dashboard')
+                    //     ->icon('heroicon-o-megaphone')
+                    //     ->schema([
+                    //         \Filament\Forms\Components\Section::make('Announcement Bar')
+                    //             ->schema([
+                    //                 \Filament\Forms\Components\Toggle::make('announcement_active')
+                    //                     ->label('Aktifkan Pengumuman')
+                    //                     ->helperText('Jika aktif, kotak biru berisi pesan akan muncul di dashboard member.'),
                                     
-                                    \Filament\Forms\Components\Textarea::make('announcement_text')
-                                        ->label('Isi Pesan')
-                                        ->rows(3)
-                                        ->placeholder('Contoh: Sistem sedang maintenance pada hari Sabtu...'),
-                                ]),
-                        ]),
+                    //                 \Filament\Forms\Components\Textarea::make('announcement_text')
+                    //                     ->label('Isi Pesan')
+                    //                     ->rows(3)
+                    //                     ->placeholder('Contoh: Sistem sedang maintenance pada hari Sabtu...'),
+                    //             ]),
+                    //     ]),
 
                     // TAB 4: KONTAK SUPPORT
                     \Filament\Forms\Components\Tabs\Tab::make('Support Contact')

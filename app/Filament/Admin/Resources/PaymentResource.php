@@ -10,7 +10,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use App\Models\GeneralSetting;
-
+use App\Models\BankAccount;
+use Illuminate\Support\HtmlString;
 
 class PaymentResource extends Resource
 {
@@ -65,26 +66,45 @@ class PaymentResource extends Resource
                             ]),
 
                         Forms\Components\Section::make('Our Bank Details')
-                            ->description('Informasi rekening yang ditampilkan ke member')
+                            ->description('Daftar rekening aktif yang muncul di invoice member')
                             ->icon('heroicon-o-building-library')
                             ->schema([
-                                Forms\Components\Placeholder::make('bank_name')
-                                    ->label('Bank Name')
-                                    ->content($settings->bank_name ?? '-'),
-                                    
-                                Forms\Components\Placeholder::make('account_number')
-                                    ->label('Account Number')
-                                    ->content($settings->bank_account_number ?? '-')
-                                    ->extraAttributes(['class' => 'font-mono font-bold']),
-                                    
-                                Forms\Components\Placeholder::make('account_owner')
-                                    ->label('Beneficiary Name')
-                                    ->content($settings->bank_account_owner ?? '-'),
+                                Forms\Components\Placeholder::make('bank_list')
+                                    ->label('Active Accounts')
+                                    ->content(function () {
+                                        // 1. Ambil semua bank aktif
+                                        $banks = BankAccount::where('is_active', true)->get();
 
-                                Forms\Components\Placeholder::make('swift')
-                                    ->label('SWIFT Code')
-                                    ->visible((bool) $settings->bank_swift_code)
-                                    ->content($settings->bank_swift_code),
+                                        if ($banks->isEmpty()) {
+                                            return new HtmlString('<span class="text-danger-500 italic">Belum ada rekening bank yang diatur.</span>');
+                                        }
+
+                                        // 2. Susun HTML-nya
+                                        $html = '<div class="grid grid-cols-1 gap-2">';
+                                        
+                                        foreach ($banks as $bank) {
+                                            $logo = $bank->logo ? "<img src='/storage/{$bank->logo}' class='h-4 w-auto inline mr-1'>" : "";
+                                            
+                                            $html .= "
+                                                <div class='p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm'>
+                                                    <div class='font-bold text-gray-800 flex items-center'>
+                                                        {$logo} {$bank->bank_name}
+                                                    </div>
+                                                    <div class='font-mono text-base font-bold text-primary-600 my-1'>
+                                                        {$bank->account_number}
+                                                    </div>
+                                                    <div class='text-gray-500 text-xs'>
+                                                        A/N {$bank->account_owner}
+                                                    </div>
+                                                </div>
+                                            ";
+                                        }
+                                        
+                                        $html .= '</div>';
+
+                                        // 3. Render sebagai HTML
+                                        return new HtmlString($html);
+                                    }),
                             ]),
                     ])->columnSpan(1),
 

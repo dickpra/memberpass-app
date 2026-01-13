@@ -21,6 +21,8 @@ class BankAccountResource extends Resource
     protected static ?string $navigationLabel = 'Bank Accounts';
     protected static ?string $modelLabel = 'Rekening Bank';
     protected static ?int $navigationSort = 2; // Urutan menu
+    // protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $navigationGroup = 'Finance';
 
     public static function form(Form $form): Form
     {

@@ -34,6 +34,7 @@ class MemberPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Blue,
             ])
+            ->emailVerification()
             ->topNavigation()
             ->login()
             ->registration(Register::class)
@@ -64,6 +65,7 @@ class MemberPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->authGuard('web')
             ->authMiddleware([
                 Authenticate::class,
             ]);

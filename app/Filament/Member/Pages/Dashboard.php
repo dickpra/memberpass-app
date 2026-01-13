@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Models\MembershipTier;
 use Carbon\Carbon;
-
+use App\Models\BankAccount; // <--- Import Model Bank
 
 
 class Dashboard extends BaseDashboard implements HasForms, HasActions
@@ -306,12 +306,14 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
                         TextInput::make('sender_name')
                             ->label('Nama Pengirim di Rekening')
                             ->placeholder('Contoh: Budi Santoso')
-                            ->required(),
+                            ->required()
+                            ->live(),
 
                         // 2. STORAGE PER FOLDER NAMA MEMBER & INVOICE
                         FileUpload::make('payment_proofs')
                             ->label('Bukti Transfer')
                             ->disk('public')
+                            ->live()
                             // LOGIKA FOLDER DINAMIS
                             ->directory(function () {
                                 $user = Auth::user();
@@ -485,6 +487,21 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
         $minPrice = ceil(($basePrice / 12) / 1000) * 1000;
         
         return max($rounded, $minPrice);
+    }
+
+    // --- TAMBAHKAN FUNGSI INI ---
+    protected function getViewData(): array
+    {
+        $user = Auth::user();
+        
+        // Ambil payment terakhir (apapun statusnya) untuk cek rejection
+        $latestPayment = Payment::where('user_id', $user->id)->latest()->first();
+
+        return [
+            'settings' => GeneralSetting::first(),
+            'banks' => \App\Models\BankAccount::where('is_active', true)->get(),
+            'latestPayment' => $latestPayment, // <--- PENTING: Kirim ini ke blade
+        ];
     }
 
     

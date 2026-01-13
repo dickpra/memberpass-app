@@ -40,6 +40,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // --- TAMBAHKAN INI ---
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users', // Tetap pakai tabel users yang sama
+        ],
+        // ---------------------
     ],
 
     /*
