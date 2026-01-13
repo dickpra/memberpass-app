@@ -335,7 +335,7 @@
             </div>
 
             <div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-                <p>&copy; {{ date('Y') }} {{ $settings->site_title }}. All rights reserved.</p>
+                <p>&copy; {{ date('Y') }} {{ $settings?->site_title ?? 'WFIED Membership' }}. All rights reserved.</p>
                 <div class="flex gap-4">
                     <a href="#" class="hover:text-white">Privacy Policy</a>
                     <a href="#" class="hover:text-white">Terms of Service</a>

@@ -122,14 +122,14 @@ class ManageSettings extends Page implements HasForms
                         ]),
                     
                     // TAB 5: SYSTEM
-                    \Filament\Forms\Components\Tabs\Tab::make('System')
-                        ->icon('heroicon-o-cog')
-                        ->schema([
-                            \Filament\Forms\Components\TextInput::make('currency')
-                                ->label('Mata Uang Default')
-                                ->default('IDR')
-                                ->readOnly(),
-                        ]),
+                    // \Filament\Forms\Components\Tabs\Tab::make('System')
+                    //     ->icon('heroicon-o-cog')
+                    //     ->schema([
+                    //         \Filament\Forms\Components\TextInput::make('currency')
+                    //             ->label('Mata Uang Default')
+                    //             ->default('IDR')
+                    //             ->readOnly(),
+                    //     ]),
                 ])
                 ->columnSpanFull()
             ])
