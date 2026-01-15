@@ -12,6 +12,8 @@ use Filament\Tables\Table;
 use App\Models\GeneralSetting;
 use App\Models\BankAccount;
 use Illuminate\Support\HtmlString;
+use Filament\Tables\Columns\TextColumn;
+
 
 class PaymentResource extends Resource
 {
@@ -257,54 +259,54 @@ class PaymentResource extends Resource
     }
 
     public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Date')
-                    ->date('d M Y, H:i')
-                    ->sortable(),
-                
-                Tables\Columns\TextColumn::make('user.name')
-                    ->searchable()
-                    ->weight('bold')
-                    ->description(fn ($record) => $record->user->email),
+{
+    return $table
+        ->columns([
+            TextColumn::make('created_at')
+                ->dateTime('d M Y')
+                ->label('Date')
+                ->sortable(),
 
-                Tables\Columns\TextColumn::make('amount')
-                    ->money(fn ($record) => $record->currency)
-                    ->sortable(),
+            TextColumn::make('user.name')
+                ->searchable()
+                ->label('Member'),
 
-                Tables\Columns\TextColumn::make('type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'registration' => 'info',
-                        'renewal' => 'success',
-                        default => 'gray',
-                    }),
+            TextColumn::make('type')
+                ->badge()
+                ->colors([
+                    'primary' => 'registration',
+                    'warning' => 'renewal',
+                ]),
 
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->formatStateUsing(function ($state, $record) {
-                        // Jika User minta batal, timpa label statusnya
-                        if ($record->user && $record->user->status === 'cancellation_requested') {
-                            return 'Request Cancel';
-                        }
-                        return ucfirst(str_replace('_', ' ', $state));
-                    })
-                    ->color(fn (string $state, $record): string => match (true) {
-                        // Prioritas warna merah jika user minta batal
-                        ($record->user && $record->user->status === 'cancellation_requested') => 'danger',
-                        $state === 'approved' => 'success',
-                        $state === 'waiting_verification' => 'warning',
-                        $state === 'rejected' => 'danger',
-                        default => 'gray',
-                    }),
-                
-                Tables\Columns\TextColumn::make('verifier.name')
-                    ->label('Verified By')
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->defaultSort('created_at', 'desc')
+            // --- KOLOM AMOUNT DINAMIS ---
+            TextColumn::make('amount')
+                ->label('Amount')
+                ->weight('bold')
+                ->formatStateUsing(function ($state, \App\Models\Payment $record) {
+                    // Cek currency dari record database
+                    if ($record->currency === 'USD') {
+                        return '$ ' . number_format($state, 2);
+                    } else {
+                        return 'IDR ' . number_format($state, 0, ',', '.');
+                    }
+                })
+                ->sortable(),
+            // ----------------------------
+
+            // Tampilkan Currency code juga biar jelas (Opsional)
+            TextColumn::make('currency')
+                ->label('Curr')
+                ->badge()
+                ->color(fn (string $state): string => match ($state) {
+                    'USD' => 'success', // Hijau kalau Dollar
+                    'IDR' => 'info',    // Biru kalau Rupiah
+                    default => 'gray',
+                })
+                ->sortable(),
+
+            TextColumn::make('status')
+                ->badge(),
+        ])
             ->filters([
                 // KOSONGKAN FILTER DI SINI
                 // Karena kita akan pakai Tabs di ListPayments.php

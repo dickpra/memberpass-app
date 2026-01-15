@@ -177,7 +177,7 @@
                                 {{-- BRAND TEXT SVG --}}
                                 <div style="width: 120px; height: 36px;">
                                     <svg class="svg-centered" viewBox="0 0 120 36" xmlns="http://www.w3.org/2000/svg">
-                                        <text x="0" y="14" fill="{{ $user->membership_type === 'VIP Lifetime' ? '#f7f1d1' : '#0f172a' }}" font-family="'Inter', sans-serif" font-weight="800" font-size="13">WFIED</text>
+                                        <text x="0" y="14" fill="{{ $user->membership_type === 'VIP Lifetime' ? '#f7f1d1' : '#0f172a' }}" font-family="'Inter', sans-serif" font-weight="800" font-size="13">WFIEd</text>
                                         <text x="0" y="28" fill="{{ $user->membership_type === 'VIP Lifetime' ? '#f7f1d1' : '#0f172a' }}" font-family="'Inter', sans-serif" font-size="11" opacity="0.8">
                                             {{ $user->membership_type === 'VIP Lifetime' ? 'Exclusive Member' : 'Official Membership' }}
                                         </text>
@@ -330,7 +330,7 @@
                         </div>
 
                         <div class="card-footnote">
-                            This card identifies the holder as a member of WFIED. Non-transferable.
+                            This card identifies the holder as a member of WFIEd. Non-transferable.
                             @if($user->membership_type === 'VIP Lifetime')
                                 <strong style="color:#f3c24a; display:block; margin-top:4px;">PREMIUM LIFETIME SUPPORT ENABLED</strong>
                             @endif

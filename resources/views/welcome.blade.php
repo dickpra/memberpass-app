@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <title>{{ $settings->site_title ?? 'WFIED Membership' }}</title>
+    <title>{{ $settings->site_title ?? 'WFIEd Membership' }}</title>
     <meta name="description" content="{{ $settings->site_description ?? 'Join our exclusive community.' }}">
 
     {{-- Fonts --}}
@@ -52,7 +52,7 @@
                         <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">W</div>
                     @endif
                     <span class="font-bold text-xl tracking-tight text-slate-900">
-                        {{ $settings->site_title ?? 'WFIED' }}
+                        {{ $settings->site_title ?? 'WFIEd' }}
                     </span>
                 </div>
 
@@ -131,7 +131,7 @@
     <section id="benefits" class="py-24 bg-white relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Why Join WFIED?</h2>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Why Join WFIEd?</h2>
                 <p class="mt-4 text-slate-500 max-w-2xl mx-auto">Kami memberikan lebih dari sekadar kartu anggota. Ini adalah investasi untuk masa depan profesional Anda.</p>
             </div>
 
@@ -177,25 +177,71 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                 
                 @foreach($tiers as $tier)
-                    <div class="relative rounded-3xl p-8 shadow-sm border border-slate-200 flex flex-col hover:border-green-400 hover:shadow-2xl hover:scale-105 transition-all duration-300
-                        @if($loop->first)
-                            bg-gradient-to-br from-green-100 via-white to-green-50
-                        @else
-                            bg-gradient-to-br from-white via-green-50 to-white
-                        @endif
-                    ">
-                        @if($loop->first)
-                            <div class="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-2xl shadow">POPULAR</div>
+                    @php
+                        // 1. Tentukan Mata Uang & Harga (Ambil dari Setting)
+                        $currency = $settings->site_currency ?? 'IDR';
+
+                        if ($currency === 'USD') {
+                            $price = $tier->price_usd;
+                            $original = $tier->original_price_usd;
+                            $symbol = '$';
+                            $displayPrice = number_format($price, 2);
+                            $displayOriginal = $original ? number_format($original, 2) : null;
+                        } else {
+                            $price = $tier->price_idr;
+                            $original = $tier->original_price_idr;
+                            $symbol = 'IDR'; // atau Rp
+                            $displayPrice = number_format($price, 0, ',', '.');
+                            $displayOriginal = $original ? number_format($original, 0, ',', '.') : null;
+                        }
+                    @endphp
+
+                    <div class="relative bg-white/70 bg-gradient-to-br from-green-100/70 via-green-50/60 to-white/80 rounded-3xl p-8 shadow-lg border border-slate-200 flex flex-col hover:border-green-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 backdrop-blur-md">
+                        
+                        {{-- === BADGE DISKON (PUBLIC) === --}}
+                        @if($original > $price)
+                            @php
+                                $saving = $original - $price;
+                                $percent = round(($saving / $original) * 100);
+                            @endphp
+                            <div class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-tr-3xl rounded-bl-2xl shadow-md z-10 tracking-wider">
+                                DISCOUNT {{ $percent }}%
+                            </div>
                         @endif
 
                         <h3 class="text-xl font-bold text-slate-900 uppercase tracking-wide">{{ $tier->name }}</h3>
-                        <div class="mt-4 flex items-baseline text-slate-900">
-                            <span class="text-4xl font-extrabold tracking-tight">IDR {{ number_format($tier->price / 1000) }}K</span>
-                            <span class="ml-1 text-sm font-semibold text-slate-500">/year</span>
+                        
+                        <div class="mt-4 flex flex-col">
+                            {{-- HARGA CORET --}}
+                            @if($original > $price)
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-slate-400 line-through font-medium">
+                                        {{ $symbol }} {{ $displayOriginal }}
+                                    </span>
+                                    <span class="text-[10px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                                        HEMAT {{ $symbol }} {{ $currency == 'USD' ? number_format($saving, 2) : number_format($saving, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            @endif
+                            
+                            {{-- HARGA FINAL --}}
+                            <div class="flex items-baseline text-slate-900 mt-1">
+                                <span class="text-5xl font-extrabold tracking-tight text-green-600">
+                                    @if($currency == 'USD')$@endif{{ $displayPrice }}
+                                </span>
+                                <span class="ml-2 text-sm font-semibold text-slate-500">
+                                    @if($currency == 'IDR') IDR @endif /year
+                                </span>
+                            </div>
+                            
+                            <p class="text-xs text-slate-500 mt-2 italic">
+                                * Full access membership for 1 year
+                            </p>
                         </div>
                         
                         <hr class="my-6 border-slate-100">
 
+                        {{-- BENEFITS LIST --}}
                         <ul class="space-y-4 mb-8 flex-grow">
                             @if($tier->benefits)
                                 @foreach($tier->benefits as $benefit)
@@ -207,8 +253,8 @@
                             @endif
                         </ul>
 
-                        <a href="{{ url('/member/register') }}" class="w-full block bg-green-600 text-white text-center py-3.5 rounded-xl font-bold hover:bg-green-700 transition duration-300 shadow-lg">
-                            Get Started
+                        <a href="{{ url('/member/register') }}" class="w-full block bg-slate-900 text-white text-center py-4 rounded-xl font-bold hover:bg-green-600 transition duration-300 shadow-xl">
+                            Join Now for @if($currency == 'USD')$@endif{{ $displayPrice }}
                         </a>
                     </div>
                 @endforeach
@@ -296,7 +342,7 @@
                 {{-- Brand Info --}}
                 <div class="md:col-span-2">
                     <div class="flex items-center gap-2 mb-4">
-                        <span class="text-white font-bold text-xl">{{ $settings->site_title ?? 'WFIED' }}</span>
+                        <span class="text-white font-bold text-xl">{{ $settings->site_title ?? 'WFIEd' }}</span>
                     </div>
                     <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
                         {{ $settings->footer_text ?? 'Building the future of professional networking. Join us and grow together.' }}
@@ -335,7 +381,7 @@
             </div>
 
             <div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-                <p>&copy; {{ date('Y') }} {{ $settings?->site_title ?? 'WFIED Membership' }}. All rights reserved.</p>
+                <p>&copy; {{ date('Y') }} {{ $settings?->site_title ?? 'WFIEd Membership' }}. All rights reserved.</p>
                 <div class="flex gap-4">
                     <a href="#" class="hover:text-white">Privacy Policy</a>
                     <a href="#" class="hover:text-white">Terms of Service</a>

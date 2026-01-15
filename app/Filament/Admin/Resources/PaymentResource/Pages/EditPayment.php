@@ -7,6 +7,8 @@ use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Payment;
+
 
 class EditPayment extends EditRecord
 {
@@ -119,6 +121,38 @@ class EditPayment extends EditRecord
             // 4. TOMBOL EMERGENCY REVOKE (Hanya untuk Approved)
             // Kita izinkan revoke KHUSUS untuk Approved (jika admin salah klik Accept).
             // Tapi TIDAK ADA Revoke untuk Rejected (sesuai request kamu: permanen).
+            // Actions\Action::make('approve_cancel')
+            //         ->label('Approve Cancel')
+            //         ->icon('heroicon-o-x-circle') // Icon silang bulat
+            //         ->color('danger') // Warna merah
+            //         ->requiresConfirmation()
+            //         ->modalHeading('Setujui Pembatalan?')
+            //         ->modalDescription('Tagihan ini akan dihapus dan User akan di-reset ke status Registered (bisa pilih paket ulang).')
+            //         ->modalSubmitActionLabel('Ya, Batalkan')
+                    
+            //         // Hanya muncul jika status User adalah 'cancellation_requested'
+            //         ->visible(fn (Payment $record) => $record->user && $record->user->status === 'cancellation_requested')
+                    
+            //         ->action(function (Payment $record) {
+            //             $user = $record->user;
+                        
+            //             // 1. Reset Status User
+            //             if ($user) {
+            //                 $user->update([
+            //                     'status' => 'registered',
+            //                     'membership_type' => null, // Hapus pilihan paketnya
+            //                 ]);
+            //             }
+
+            //             // 2. Hapus Data Payment ini (karena batal)
+            //             $record->delete();
+
+            //             // 3. Notifikasi
+            //             \Filament\Notifications\Notification::make()
+            //                 ->title('Payment cancelled & User reset.')
+            //                 ->success()
+            //                 ->send();
+            //         }),
             Actions\Action::make('revoke_approval')
                 ->label('Batal Approve')
                 ->color('warning')

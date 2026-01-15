@@ -119,80 +119,89 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
         $user = Auth::user();
         $settings = GeneralSetting::first();
         $tier = MembershipTier::find($tierId);
+        
+        // 1. CEK MATA UANG AKTIF (Default IDR jika null)
+        $currency = $settings->site_currency ?? 'IDR';
 
-        // SECURITY CHECK:
-        // Jika user mencoba memilih Tier yang 'Invitation Only' (VIP) lewat inspect element,
-        // Kita tolak mentah-mentah.
+        // 2. AMBIL HARGA DASAR SESUAI MATA UANG
+        if ($currency === 'USD') {
+            $basePrice = $tier->price_usd; // Ambil kolom USD
+        } else {
+            $basePrice = $tier->price_idr; // Ambil kolom IDR
+        }
+
+        // Security Check: Tier Invitation Only
         if ($tier->is_invitation_only) {
-            Notification::make()
-                ->title('Action Unauthorized')
-                ->body('This tier is Invitation Only (Admin Promote).')
-                ->danger()
-                ->send();
+            Notification::make()->title('Action Unauthorized')->danger()->send();
             return;
         }
 
         // ==========================================
-        // LOGIC PRORATED PRICING & ROLLOVER
+        // LOGIC PRORATED (DUAL CURRENCY SUPPORT)
         // ==========================================
         
         $now = Carbon::now();
-        $currentYear = $now->year;
-        $basePrice = $tier->price;
         $finalPrice = 0;
         $note = '';
 
-        // ATURAN 1: BULAN DESEMBER (Rollover ke Tahun Depan)
+        // ATURAN 1: BULAN DESEMBER (Full Price + Bonus Tahun Depan)
         if ($now->month == 12) {
-            // Bayar Full, tapi aktif sampai tahun depan
             $finalPrice = $basePrice;
-            $note = "Early Bird {$currentYear} (Bonus Des + Full " . ($currentYear + 1) . ")";
+            $note = "Early Bird Full Year ({$currency})";
         } 
-        // ATURAN 2: JANUARI - NOVEMBER (Prorated)
+        // ATURAN 2: PRORATED (Januari - November)
         else {
-            // Hitung total hari dalam tahun ini (365 atau 366)
             $daysInYear = $now->copy()->endOfYear()->dayOfYear; 
-            
-            // Hitung sisa hari dari hari ini sampai 31 Des
-            // diffInDays menghasilkan selisih, tambah 1 biar hari ini terhitung
             $remainingDays = $now->diffInDays($now->copy()->endOfYear()) + 1;
 
-            // Rumus Prorate: (Sisa Hari / Total Hari) * Harga Dasar
+            // Rumus: (Sisa Hari / Total Hari) * Harga Dasar
             $calculatedPrice = ($remainingDays / $daysInYear) * $basePrice;
 
-            // Cek Minimal Pembayaran (Setara 1 Bulan)
+            // Minimal Bayar: Seharga 1 Bulan (Agar tidak terlalu murah di akhir tahun)
             $minPrice = $basePrice / 12;
 
             if ($calculatedPrice < $minPrice) {
                 $finalPrice = $minPrice;
                 $note = "Prorated (Minimum 1 Month Rule)";
             } else {
-                // Pembulatan ke ribuan terdekat (biar angkanya cantik, misal 123.456 jadi 124.000)
-                $finalPrice = ceil($calculatedPrice / 1000) * 1000;
-                $note = "Prorated for {$remainingDays} days remaining";
+                $finalPrice = $calculatedPrice;
+                $note = "Prorated for {$remainingDays} days";
+            }
+
+            // 3. PEMBULATAN (ROUNDING) KHUSUS
+            if ($currency === 'IDR') {
+                // IDR: Bulatkan ke ribuan ke atas (misal 45.123 -> 46.000)
+                $finalPrice = ceil($finalPrice / 1000) * 1000;
+            } else {
+                // USD: Bulatkan 2 desimal (misal 45.123 -> 45.12)
+                $finalPrice = round($finalPrice, 2);
             }
         }
 
         // ==========================================
         
-        // Simpan data ke User & Payment
+        // Simpan Status User
         $user->update(['membership_type' => $tier->name, 'status' => 'waiting_payment']);
 
+        // Simpan Payment dengan Currency yang Benar
         Payment::create([
             'user_id' => $user->id,
-            'amount' => $finalPrice, // Harga hasil kalkulasi
-            'currency' => $settings->currency ?? 'IDR',
+            'amount' => $finalPrice,
+            'currency' => $currency, // <--- Simpan IDR/USD
             'type' => 'registration',
             'status' => 'pending_upload',
             'sender_name' => $user->name,
-            // Simpan catatan hitungan agar admin & user paham kenapa harganya segitu
             'admin_note' => $note, 
         ]);
+        
+        // Format angka untuk notifikasi
+        $displayAmount = ($currency === 'USD') 
+            ? '$' . number_format($finalPrice, 2)
+            : 'IDR ' . number_format($finalPrice, 0, ',', '.');
 
-        // Tampilkan notifikasi dengan info harga
         Notification::make() 
             ->title('Invoice Created')
-            ->body("Total: IDR " . number_format($finalPrice) . " ({$note})")
+            ->body("Total: {$displayAmount} ({$note})")
             ->success()
             ->send();
 
@@ -333,6 +342,7 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
                                 return "payment-proofs/{$safeName}/inv-{$invoiceId}";
                             })
                             ->image()
+                            ->preserveFilenames()
                             ->multiple()
                             ->maxFiles(5)
                             ->required(),
@@ -361,7 +371,7 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
                 Payment::create([
                     'user_id' => $user->id,
                     'amount' => $lastPayment ? $lastPayment->amount : 0, // Pakai nominal lama
-                    'currency' => $settings->currency ?? 'IDR',
+                    'currency' => $settings->site_currency ?? 'IDR',
                     'type' => 'registration',
                     'status' => 'pending_upload', // Reset ke pending upload
                     'sender_name' => $user->name,
@@ -383,75 +393,75 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
             ->requiresConfirmation()
             ->modalHeading('Konfirmasi Perpanjangan')
             
-            // Tampilkan estimasi harga di Modal Konfirmasi
+            // Tampilkan estimasi harga di Modal Konfirmasi (DINAMIS CURRENCY)
             ->modalDescription(function() {
+                $settings = GeneralSetting::first();
+                $currency = $settings->site_currency ?? 'IDR';
+                
+                // Ambil Tier GreenCard (Contoh)
                 $greenTier = \App\Models\MembershipTier::where('name', 'GreenCard')->first();
+                
                 if (!$greenTier) return 'Error: Paket tidak ditemukan.';
 
-                $now = \Carbon\Carbon::now();
-                $price = $this->calculateRenewalPrice($greenTier->price);
+                // Tentukan Harga Dasar sesuai Mata Uang Aktif
+                $basePrice = ($currency === 'USD') ? $greenTier->price_usd : $greenTier->price_idr;
+
+                // Hitung Harga
+                $price = $this->calculateRenewalPrice($basePrice, $currency);
                 
-                $formattedPrice = number_format($price);
+                // Format Tampilan
+                $formattedPrice = ($currency === 'USD') 
+                    ? '$' . number_format($price, 2) 
+                    : 'IDR ' . number_format($price, 0, ',', '.');
                 
-                // Pesan berbeda tergantung bulan
-                if ($now->month >= 11) {
-                    return "Anda akan memperpanjang untuk TAHUN DEPAN (Full 1 Tahun). Biaya: IDR {$formattedPrice}.";
-                } else {
-                    return "Anda melakukan perpanjangan di bulan berjalan. Biaya disesuaikan (Prorated) sisa tahun ini. Biaya: IDR {$formattedPrice}.";
-                }
+                return "Biaya perpanjangan Anda saat ini adalah: {$formattedPrice} (Disesuaikan dengan sisa bulan tahun ini).";
             })
             
             ->action(function () {
                 $user = \Illuminate\Support\Facades\Auth::user();
-                
-                // 1. SECURITY CHECK (Banned gak boleh renew)
+                $settings = GeneralSetting::first();
+                $currency = $settings->site_currency ?? 'IDR';
+
+                // 1. SECURITY CHECK
                 if ($user->status === 'banned') {
-                    \Filament\Notifications\Notification::make()
-                        ->title('Access Denied')
-                        ->body('Akun Anda dibekukan. Hubungi Admin.')
-                        ->danger()
-                        ->send();
+                    \Filament\Notifications\Notification::make()->title('Access Denied')->danger()->send();
                     return;
                 }
 
-                // 2. Simpan Status Lama (untuk fitur Cancel)
                 session()->put('previous_member_status', $user->status);
 
-                // 3. Ambil Tier & Hitung Harga
                 $greenTier = \App\Models\MembershipTier::where('name', 'GreenCard')->first();
-                if (!$greenTier) {
-                    \Filament\Notifications\Notification::make()->title('Tier tidak ditemukan')->danger()->send();
-                    return;
-                }
+                if (!$greenTier) return;
 
-                // --- LOGIC HARGA BARU ---
-                $amount = $this->calculateRenewalPrice($greenTier->price);
-                $now = \Carbon\Carbon::now();
+                // 2. AMBIL HARGA DASAR
+                $basePrice = ($currency === 'USD') ? $greenTier->price_usd : $greenTier->price_idr;
+
+                // 3. HITUNG HARGA FINAL
+                $amount = $this->calculateRenewalPrice($basePrice, $currency);
                 
-                // Tentukan Catatan Admin
-                if ($now->month >= 11) {
-                    $note = "Early Bird Renewal for " . ($now->year + 1);
-                } else {
-                    $note = "Late/Prorated Renewal (Remainder of " . $now->year . ")";
-                }
+                $now = \Carbon\Carbon::now();
+                $note = ($now->month >= 11) 
+                    ? "Early Bird Renewal ({$currency})" 
+                    : "Prorated Renewal ({$currency})";
 
-                // 4. Buat Invoice
+                // 4. BUAT INVOICE (Simpan Currency-nya juga)
                 \App\Models\Payment::create([
                     'user_id' => $user->id,
-                    'amount' => $amount, // Harga hasil hitungan prorated
-                    'currency' => 'IDR',
+                    'amount' => $amount,
+                    'currency' => $currency, // <--- PENTING: Simpan mata uang saat transaksi
                     'type' => 'renewal',
                     'status' => 'pending_upload',
                     'sender_name' => $user->name,
                     'admin_note' => $note,
                 ]);
 
-                // 5. Update Status User
                 $user->update(['status' => 'waiting_payment']);
+
+                $formattedAmount = ($currency === 'USD') ? '$'.number_format($amount, 2) : 'IDR '.number_format($amount);
 
                 \Filament\Notifications\Notification::make()
                     ->title('Invoice Dibuat')
-                    ->body("Total tagihan: IDR " . number_format($amount))
+                    ->body("Total tagihan: " . $formattedAmount)
                     ->success()
                     ->send();
                 
@@ -459,48 +469,57 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
             });
     }
 
-    // --- FUNGSI HITUNG MATEMATIKA (HELPER) ---
-    // Masukkan fungsi ini di dalam class Dashboard juga (paling bawah)
-    protected function calculateRenewalPrice($basePrice)
+    // --- UPDATE HELPER: TERIMA PARAMETER CURRENCY ---
+    protected function calculateRenewalPrice($basePrice, $currency = 'IDR')
     {
         $now = \Carbon\Carbon::now();
 
-        // SKENARIO A: Bulan Nov & Des (Early Bird untuk Tahun Depan)
-        // Harga: Full 100%
+        // SKENARIO A: Full Price (Nov-Des)
         if ($now->month >= 11) {
             return $basePrice;
         }
 
-        // SKENARIO B: Bulan Jan - Okt (Late Renewal / Prorated Tahun Ini)
-        // Harga: Dihitung sisa hari
+        // SKENARIO B: Prorated
         $endOfYear = $now->copy()->endOfYear();
-        $daysInYear = $now->copy()->startOfYear()->diffInDays($endOfYear) + 1; // 365 atau 366
+        $daysInYear = $now->copy()->startOfYear()->diffInDays($endOfYear) + 1;
         $remainingDays = $now->diffInDays($endOfYear) + 1;
 
-        // Rumus: (Sisa Hari / Total Hari Setahun) * Harga Dasar
+        // Rumus Dasar
         $calculated = ($remainingDays / $daysInYear) * $basePrice;
+        $minPrice = $basePrice / 12; // Min bayar 1 bulan
 
-        // Pembulatan ke 1000 terdekat (supaya cantik, misal 45.230 jadi 46.000)
-        $rounded = ceil($calculated / 1000) * 1000;
+        $finalPrice = max($calculated, $minPrice);
 
-        // Rule Tambahan: Minimal bayar seharga 1 bulan (biar gak 0 rupiah kalau daftar 31 Des siang)
-        $minPrice = ceil(($basePrice / 12) / 1000) * 1000;
-        
-        return max($rounded, $minPrice);
+        // --- BEDA CARA PEMBULATAN ---
+        if ($currency === 'IDR') {
+            // IDR: Bulatkan ke ribuan terdekat (45.123 -> 46.000)
+            return ceil($finalPrice / 1000) * 1000;
+        } else {
+            // USD: Bulatkan 2 desimal (45.123 -> 45.12)
+            return round($finalPrice, 2);
+        }
     }
 
     // --- TAMBAHKAN FUNGSI INI ---
     protected function getViewData(): array
     {
         $user = Auth::user();
+        $settings = GeneralSetting::first();
         
-        // Ambil payment terakhir (apapun statusnya) untuk cek rejection
+        // Ambil Payment Terakhir
         $latestPayment = Payment::where('user_id', $user->id)->latest()->first();
 
+        // Ambil Paket Membership (Kecuali yang Hidden / Invitation Only)
+        $tiers = MembershipTier::where('is_active', true)
+            ->where('is_invitation_only', false) // Jangan tampilkan VIP di dashboard user biasa
+            ->get();
+
         return [
-            'settings' => GeneralSetting::first(),
+            'settings' => $settings,
             'banks' => \App\Models\BankAccount::where('is_active', true)->get(),
-            'latestPayment' => $latestPayment, // <--- PENTING: Kirim ini ke blade
+            'latestPayment' => $latestPayment,
+            'tiers' => $tiers, // <--- Kirim Data Paket
+            'currency' => $settings->site_currency ?? 'IDR', // <--- Kirim Setting Mata Uang
         ];
     }
 

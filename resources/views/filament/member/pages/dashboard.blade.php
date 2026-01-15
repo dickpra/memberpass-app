@@ -109,6 +109,11 @@
         .pricing-card.green .features-list svg { color: #16a34a; width: 1.25rem; margin-right: 0.5rem; }
         .pricing-card.vip-lifetime .features-list svg { color: #fbbf24; width: 1.25rem; margin-right: 0.5rem; }
 
+        .strike-text {
+            text-decoration: line-through;
+            text-decoration-color: rgba(255, 255, 255, 0.8); /* Warna garis lebih tebal/jelas */
+            text-decoration-thickness: 2px; /* Garis lebih tebal */
+        }
         @media (max-width:640px){
             .card-header { padding: 1.6rem; }
             .card-body { padding: 1.2rem; }
@@ -119,34 +124,17 @@
     {{-- 2. PHP LOGIC (Renewal & Price) --}}
     @php
         $user = auth()->user();
-        $settings = \App\Models\GeneralSetting::first();
         $now = \Carbon\Carbon::now();
-
-        // A. Logic Prorated (Untuk Registered View)
-        $greenTier = \App\Models\MembershipTier::where('name', 'GreenCard')->first();
-        $displayPrice = 0; $priceNote = '';
-        if ($greenTier) {
-            $basePrice = $greenTier->price;
-            if ($now->month == 12) {
-                $displayPrice = $basePrice;
-                $priceNote = "Early Bird " . ($now->year + 1);
-            } else {
-                $daysInYear = $now->copy()->endOfYear()->dayOfYear;
-                $remaining = $now->diffInDays($now->copy()->endOfYear()) + 1;
-                $calc = ($remaining / $daysInYear) * $basePrice;
-                $min = $basePrice / 12;
-                $displayPrice = ceil(max($calc, $min) / 1000) * 1000;
-                $priceNote = "Prorated (Sisa Tahun Ini)";
-            }
-        }
-
-        // B. Logic Renewal Banner
+        
+        // Data ini dikirim dari Controller (getViewData), tapi kita set default agar tidak error
+        $currency = $currency ?? 'IDR'; 
+        
+        // Logic Banner Renewal
         $showRenewal = false; 
         $expiry = null; 
         if ($user && $user->expiry_date) {
             $expiry = \Carbon\Carbon::parse($user->expiry_date);
             $monthsLeft = $now->diffInMonths($expiry, false); 
-            // Muncul jika Active/Inactive, sisa <3 bulan, dan bukan VIP
             $showRenewal = ($user->status === 'active' || $user->status === 'inactive') 
                             && $monthsLeft <= 3 
                             && $user->membership_type !== 'VIP Lifetime';
@@ -196,44 +184,132 @@
         @if($user->status === 'registered')
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-800">Choose Your Membership</h2>
-                <p class="text-gray-500 mt-2">Bergabunglah dengan komunitas eksklusif kami.</p>
+                <p class="text-gray-500 mt-2">Pilih paket keanggotaan Anda ({{ $currency }}).</p>
             </div>
             <div class="max-w-md mx-auto">
-                @php
-                    $publicTier = \App\Models\MembershipTier::where('is_active', true)
-                                    ->where('is_invitation_only', false)->first();
+                {{-- LOOPING TIERS DARI CONTROLLER --}}
+                @foreach($tiers as $tier)
+        @php
+            // 1. TENTUKAN HARGA DASAR (USD/IDR)
+            if ($currency === 'USD') {
+                $basePrice = $tier->price_usd;
+                $baseOriginal = $tier->original_price_usd;
+                $symbol = '$';
+            } else {
+                $basePrice = $tier->price_idr;
+                $baseOriginal = $tier->original_price_idr;
+                $symbol = 'IDR';
+            }
+
+            // 2. LOGIC PRORATED (HITUNGAN)
+            $now = \Carbon\Carbon::now();
+            $finalPrice = 0;
+            $infoText = "";
+            $isProrated = false;
+
+            if ($now->month == 12) {
+                $finalPrice = $basePrice;
+                $infoText = "Early Bird " . ($now->year + 1);
+            } else {
+                $daysInYear = $now->copy()->endOfYear()->dayOfYear;
+                $remaining = $now->diffInDays($now->copy()->endOfYear()) + 1;
+                
+                $calc = ($remaining / $daysInYear) * $basePrice;
+                $min = $basePrice / 12;
+                
+                if ($calc < $min) {
+                    $finalPrice = $min;
+                    $infoText = "Prorated (Min 1 Month)";
+                } else {
+                    $finalPrice = $calc;
+                    $infoText = "Prorated: Sisa {$remaining} hari";
+                }
+                $isProrated = true;
+            }
+
+            // 3. PEMBULATAN
+            if ($currency === 'IDR') {
+                $finalPrice = ceil($finalPrice / 1000) * 1000;
+            } else {
+                $finalPrice = round($finalPrice, 2);
+            }
+
+            // 4. FORMAT TAMPILAN
+            if ($currency === 'USD') {
+                $displayPrice = number_format($finalPrice, 2);
+                $displayOriginal = $baseOriginal ? number_format($baseOriginal, 2) : null;
+                $displayBase = number_format($basePrice, 2);
+            } else {
+                $displayPrice = number_format($finalPrice, 0, ',', '.');
+                $displayOriginal = $baseOriginal ? number_format($baseOriginal, 0, ',', '.') : null;
+                $displayBase = number_format($basePrice, 0, ',', '.');
+            }
+        @endphp
+
+        <div class="pricing-card green">
+            {{-- === BADGE DISKON (MEMBER DASHBOARD) === --}}
+            @if($baseOriginal > $basePrice)
+                @php 
+                    $saving = $baseOriginal - $basePrice;
+                    $percent = round(($saving / $baseOriginal) * 100); 
                 @endphp
-                @if($publicTier)
-                    <div class="pricing-card green">
-                        <div class="card-header">
-                            <h3 class="uppercase">{{ $publicTier->name }}</h3>
-                            <div class="mt-4">
-                                <span class="text-lg align-top opacity-75">IDR</span>
-                                <span class="price-tag">{{ number_format($displayPrice / 1000) }}K</span>
-                            </div>
-                            <div class="sub-text">{{ $priceNote }}</div>
-                            <div class="mt-2 text-xs opacity-75 bg-white/20 inline-block px-3 py-1 rounded-full">
-                                Valid until 31 Dec {{ $now->month == 12 ? $now->year + 1 : $now->year }}
-                            </div>
+                {{-- Badge Merah Mencolok --}}
+                <div class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl shadow-sm z-20 border-l border-b border-red-800" style="background: linear-gradient(90deg, #dc2626 60%, #b91c1c 100%);">
+                    DISCOUNT {{ $percent }}%
+                </div>
+            @endif
+
+            <div class="card-header">
+                <h3 class="uppercase">{{ $tier->name }}</h3>
+                
+                {{-- AREA HARGA --}}
+                <div class="mt-2 min-h-[90px] flex flex-col justify-center relative">
+                    
+                    {{-- 1. Harga Coret (Normal Tahunan) --}}
+                    @if($baseOriginal > $basePrice)
+                        {{-- Gunakan style manual agar tidak hilang oleh Tailwind Purge --}}
+                        <div class="text-sm text-white/70 font-medium mb-0.5 strike-text" 
+                             style="text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.7);">
+                            Normal: {{ $symbol }} {{ $displayOriginal }}
                         </div>
-                        <div class="card-body">
-                            <ul class="features-list">
-                                @if($publicTier->benefits)
-                                    @foreach($publicTier->benefits as $b)
-                                        <li><x-heroicon-s-check-circle /> {{ is_array($b) ? $b['text'] : $b }}</li>
-                                    @endforeach
-                                @endif
-                            </ul>
-                            <button type="button" 
-                                wire:click="mountAction('selectTier', {{ json_encode(['id' => $publicTier->id, 'name' => $publicTier->name]) }})"
-                                class="btn-action">
-                                Join Membership Now
-                            </button>
-                        </div>
+                    @endif
+
+                    {{-- 2. Harga Final (Yang harus dibayar) --}}
+                    <div>
+                        <span class="text-lg align-top opacity-75 font-bold">{{ $symbol }}</span>
+                        <span class="price-tag leading-none">{{ $displayPrice }}</span>
                     </div>
-                @else
-                    <div class="p-4 bg-gray-100 text-center rounded text-gray-500">Pendaftaran Membership sedang ditutup.</div>
-                @endif
+
+                    {{-- 3. Keterangan Prorated --}}
+                    <div class="mt-2 inline-block bg-white/20 backdrop-blur-sm rounded px-2 py-1 text-xs font-medium text-white/90 border border-white/10">
+                        {{ $infoText }}
+                    </div>
+
+                    {{-- 4. Info Harga Paket Asli (Jika sedang prorated) --}}
+                    @if($isProrated)
+                        <div class="text-[10px] mt-1 opacity-70 italic">
+                            (Base Plan: {{ $symbol }} {{ $displayBase }} / year)
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="card-body">
+                <ul class="features-list">
+                    @if($tier->benefits)
+                        @foreach($tier->benefits as $b)
+                            <li><x-heroicon-s-check-circle /> {{ is_array($b) ? $b['text'] : $b }}</li>
+                        @endforeach
+                    @endif
+                </ul>
+                <button type="button" 
+                    wire:click="mountAction('selectTier', {{ json_encode(['id' => $tier->id, 'name' => $tier->name]) }})"
+                    class="btn-action">
+                    Select Plan
+                </button>
+            </div>
+        </div>
+    @endforeach
             </div>
 
         {{-- ================================================= --}}
@@ -253,10 +329,18 @@
                         <div class="flex justify-between items-center mb-4">
                             <span class="text-gray-500 text-sm">Total</span>
                             @php 
-                                $payment = \App\Models\Payment::where('user_id', $user->id)->where('status', 'pending_upload')->latest()->first(); 
+                                $payment = \App\Models\Payment::where('user_id', $user->id)
+                                            ->where('status', 'pending_upload')
+                                            ->latest()
+                                            ->first(); 
                                 $amount = $payment ? $payment->amount : 0;
+                                $payCurrency = $payment ? $payment->currency : 'IDR';
                             @endphp
-                            <span class="font-bold text-xl">{{ $settings->currency ?? 'IDR' }} {{ number_format($amount) }}</span>
+                            {{-- Tampilkan sesuai Currency Payment --}}
+                            <span class="font-bold text-xl">
+                                {{ $payCurrency }} 
+                                {{ $payCurrency == 'USD' ? number_format($amount, 2) : number_format($amount, 0, ',', '.') }}
+                            </span>
                         </div>
                         <div class="flex flex-col gap-3 pt-4 border-t">
                              {{ $this->downloadInvoiceAction }}

@@ -10,23 +10,37 @@ use App\Models\BankAccount;
 // Halaman Depan (Landing Page)
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Route login bawaan Filament (biarkan saja, biasanya otomatis)
+Route::get('/check-member', [HomeController::class, 'checkMember'])->name('check.member');
+
+// HAPUS ->middleware('auth') JIKA ADA DI GROUP INI
 Route::get('/invoice/{payment}', function (Payment $payment) {
-    // Keamanan: Pastikan yang buka invoice adalah pemiliknya atau admin
-    if (auth()->id() !== $payment->user_id && auth()->user()->role !== 'admin') {
-        abort(403);
+    
+    // 1. CEK OTENTIKASI MANUAL (SUPPORT DUAL GUARD)
+    $webUser = auth('web')->user();   // Member
+    $adminUser = auth('admin')->user(); // Admin
+
+    // Jika tidak ada yang login sama sekali -> Lempar ke Login Member
+    if (!$webUser && !$adminUser) {
+        return redirect('/member/login');
     }
 
-    // 2. Ambil Settings
-    $settings = GeneralSetting::first();
+    // 2. CEK HAK AKSES (AUTHORIZATION)
+    // Jika login sebagai Member, pastikan dia pemilik invoice
+    if ($webUser && !$adminUser) {
+        if ($payment->user_id !== $webUser->id) {
+            abort(403, 'Unauthorized access to this invoice.');
+        }
+    }
+    // Jika Admin ($adminUser ada), otomatis lolos (Boleh lihat semua)
 
-    // 3. AMBIL DATA BANKS (Inilah solusi errornya)
+    // 3. AMBIL DATA UNTUK VIEW
+    $settings = GeneralSetting::first();
     $banks = BankAccount::where('is_active', true)->get();
 
-    // 4. Kirim ke View 'invoice'
-    return view('invoice', [ // Pastikan nama view sesuai file kamu (invoice.blade.php)
+    return view('invoice', [
         'payment' => $payment,
         'settings' => $settings,
-        'banks' => $banks, // <--- INI WAJIB ADA
+        'banks' => $banks,
     ]);
-})->middleware('auth')->name('invoice.print');
+
+})->name('invoice.print');

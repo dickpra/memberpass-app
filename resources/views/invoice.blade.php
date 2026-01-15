@@ -141,7 +141,12 @@
                     @endif
                 </td>
                 <td class="py-4 px-4 border-b text-right font-mono text-gray-800 font-bold">
-                    {{ $settings->currency ?? 'IDR' }} {{ number_format($payment->amount) }}
+                    {{-- LOGIC DUAL CURRENCY --}}
+                    @if($payment->currency == 'USD')
+                        $ {{ number_format($payment->amount, 2) }}
+                    @else
+                        IDR {{ number_format($payment->amount, 0, ',', '.') }}
+                    @endif
                 </td>
             </tr>
         </tbody>
@@ -153,7 +158,12 @@
             <div class="flex justify-between py-3 border-b border-gray-300">
                 <span class="font-bold text-gray-600">Total Due</span>
                 <span class="font-extrabold text-2xl text-blue-600">
-                    {{ $settings->currency ?? 'IDR' }} {{ number_format($payment->amount) }}
+                    {{-- LOGIC DUAL CURRENCY --}}
+                    @if($payment->currency == 'USD')
+                        $ {{ number_format($payment->amount, 2) }}
+                    @else
+                        IDR {{ number_format($payment->amount, 0, ',', '.') }}
+                    @endif
                 </span>
             </div>
         </div>

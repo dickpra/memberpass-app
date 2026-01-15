@@ -9,6 +9,10 @@ use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Section;
+
+
 
 class ManageSettings extends Page implements HasForms
 {
@@ -120,7 +124,22 @@ class ManageSettings extends Page implements HasForms
                                 ->label('Email Support')
                                 ->email(),
                         ]),
-                    
+                    \Filament\Forms\Components\Tabs\Tab::make('Currency Settings')
+                        ->icon('heroicon-o-currency-dollar')
+                        ->label('Pilih mata uang utama yang aktif di website.')
+                        ->schema([
+                            \Filament\Forms\Components\Select::make('site_currency')
+                                ->label('Active Currency')
+                                ->options([
+                                    'IDR' => 'IDR (Indonesian Rupiah)',
+                                    'USD' => 'USD (US Dollar)',
+                                ])
+                                ->default('USD')
+                                ->required()
+                                ->native(false), // Agar tampilan dropdown lebih bagus
+                        ]),
+
+                    //tidak jadi dulu bikin error
                     // TAB 5: SYSTEM
                     // \Filament\Forms\Components\Tabs\Tab::make('System')
                     //     ->icon('heroicon-o-cog')

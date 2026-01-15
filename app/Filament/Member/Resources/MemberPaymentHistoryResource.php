@@ -5,6 +5,7 @@ namespace App\Filament\Member\Resources;
 use App\Filament\Member\Resources\MemberPaymentHistoryResource\Pages;
 use App\Models\Payment;
 use Filament\Forms;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -40,7 +41,7 @@ class MemberPaymentHistoryResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('amount')
                                     ->label('Total Amount')
-                                    ->prefix('IDR')
+                                    ->prefix(fn ($record) => $record?->currency === 'USD' ? 'USD' : 'IDR')
                                     ->numeric()
                                     ->readOnly(), // Kunci jadi Read Only
 
@@ -54,7 +55,7 @@ class MemberPaymentHistoryResource extends Resource
 
                                 Forms\Components\TextInput::make('created_at')
                                     ->label('Date Created')
-                                    // ->formatStateUsing(fn ($state) => $state->format('d M Y H:i'))
+                                    ->formatStateUsing(fn ($state) => \Carbon\Carbon::parse($state)->format('d M Y H:i'))
                                     ->readOnly(),
                             ]),
                         
@@ -88,9 +89,15 @@ class MemberPaymentHistoryResource extends Resource
                     ->date('d M Y')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('amount')
-                    ->money('IDR')
-                    ->weight('bold'),
+                Tables\Columns\TextColumn::make('currency')
+                    ->label('Curr')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'USD' => 'success', // Hijau kalau Dollar
+                        'IDR' => 'info',    // Biru kalau Rupiah
+                        default => 'gray',
+                    })
+                ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()

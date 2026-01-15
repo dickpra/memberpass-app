@@ -29,13 +29,11 @@ class Register extends BaseRegister
 
                 Select::make('country')
                     ->label('Country')
-                    ->options([
-                        'Indonesia' => 'Indonesia',
-                        'Malaysia' => 'Malaysia',
-                        'Singapore' => 'Singapore',
-                        'USA' => 'USA',
-                        'Other' => 'Other',
-                    ])
+                    ->options(
+                        collect(config('countries'))
+                            ->mapWithKeys(fn ($country) => [$country => $country])
+                            ->toArray()
+                    )
                     ->searchable()
                     ->required(),
 
