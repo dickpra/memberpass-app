@@ -6,6 +6,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Pages\Auth\Register as BaseRegister;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Model;
+
 
 class Register extends BaseRegister
 {
@@ -48,5 +51,23 @@ class Register extends BaseRegister
                 $this->getPasswordConfirmationFormComponent(),
             ])
             ->statePath('data');
+    }
+
+    // Kita override fungsi utama pendaftaran
+    protected function handleRegistration(array $data): Model
+    {
+        // 1. Jalankan proses pendaftaran standar (simpan user ke DB)
+        $user = parent::handleRegistration($data);
+
+        // 2. TAMPILKAN NOTIFIKASI SUKSES
+        Notification::make()
+            ->title('Pendaftaran Berhasil!')
+            ->body('Akun Anda telah dibuat. Silakan periksa kotak masuk (atau spam) email Anda untuk verifikasi.')
+            ->success() // Warna hijau
+            ->duration(10000) // Tampil agak lama (10 detik) biar terbaca
+            ->send();
+
+        // 3. Kembalikan object user agar proses redirect berjalan lanjut
+        return $user;
     }
 }

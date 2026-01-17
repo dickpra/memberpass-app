@@ -132,7 +132,7 @@ class MembershipTierResource extends Resource
                             ->label('Card Style (Color Theme)')
                             ->options([
                                 'green' => 'Green Style (Green)',
-                                'vip-lifetime' => 'VIP Black/Gold (Special)',
+                                // 'vip-lifetime' => 'VIP Black/Gold (Special)',
                             ])
                             ->required(),
 

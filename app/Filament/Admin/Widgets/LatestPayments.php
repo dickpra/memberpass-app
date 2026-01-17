@@ -29,10 +29,18 @@ class LatestPayments extends BaseWidget
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Member')
                     ->weight('bold'),
-                
+
                 Tables\Columns\TextColumn::make('amount')
-                    ->money('IDR')
-                    ->label('Jumlah'),
+                    ->label('Amount')
+                    ->weight('bold')
+                    ->formatStateUsing(function ($state, \App\Models\Payment $record) {
+                        // Cek currency dari record database
+                        if ($record->currency === 'USD') {
+                            return '$ ' . number_format($state, 2);
+                        } else {
+                            return 'IDR ' . number_format($state, 0, ',', '.');
+                        }
+                    }),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
