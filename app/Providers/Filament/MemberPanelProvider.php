@@ -28,7 +28,7 @@ class MemberPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->brandName('WFIED Member')
+            ->brandName('WFIEd Member')
             ->id('member')
             ->path('member')
             ->colors([

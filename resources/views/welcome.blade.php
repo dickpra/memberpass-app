@@ -114,14 +114,14 @@
                     </div>
                 </div>
                 <p class="text-sm font-medium text-slate-500">
-                    Bergabung bersama <span class="text-slate-900 font-bold">{{ $totalMembers }}+ Members</span> di seluruh Indonesia
+                    Join with <span class="text-slate-900 font-bold">50+</span> countries around the world.
                 </p>
             </div>
 
             {{-- CTA Buttons --}}
             <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
                 <a href="#pricing" class="px-8 py-4 bg-gradient-primary text-white rounded-xl font-bold text-lg shadow-xl shadow-green-500/20 hover:shadow-green-500/40 transition transform hover:-translate-y-1">
-                    Lihat Pilihan Paket
+                    See Membership Plans
                 </a>
             </div>
         </div>
@@ -132,7 +132,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Why Join WFIEd?</h2>
-                <p class="mt-4 text-slate-500 max-w-2xl mx-auto">Kami memberikan lebih dari sekadar kartu anggota. Ini adalah investasi untuk masa depan profesional Anda.</p>
+                <p class="mt-4 text-slate-500 max-w-2xl mx-auto">We provide more than just membership cards. This is an investment for your professional future.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -141,8 +141,8 @@
                     <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-3">Networking Luas</h3>
-                    <p class="text-slate-500 leading-relaxed">Terhubung dengan ratusan profesional dari berbagai industri. Buka peluang kolaborasi bisnis baru.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Wide Networking</h3>
+                    <p class="text-slate-500 leading-relaxed">Connect with hundreds of professionals from various industries. Open up new business collaboration opportunities.</p>
                 </div>
 
                 {{-- Feature 2 --}}
@@ -151,7 +151,7 @@
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                     </div>
                     <h3 class="text-xl font-bold text-slate-900 mb-3">Premium Resources</h3>
-                    <p class="text-slate-500 leading-relaxed">Akses ke materi eksklusif, template bisnis, dan rekaman webinar yang tidak tersedia untuk umum.</p>
+                    <p class="text-slate-500 leading-relaxed">Access exclusive materials, business templates, and webinar recordings not available to the public.</p>
                 </div>
 
                 {{-- Feature 3 --}}
@@ -159,8 +159,8 @@
                     <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-3">Sertifikasi & Status</h3>
-                    <p class="text-slate-500 leading-relaxed">Dapatkan pengakuan profesional dengan status keanggotaan resmi dan kartu member digital.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Certification & Status</h3>
+                    <p class="text-slate-500 leading-relaxed">Get professional recognition with official membership status and digital member cards.</p>
                 </div>
             </div>
         </div>
@@ -301,33 +301,33 @@
                 {{-- FAQ 1 --}}
                 <div class="border border-slate-200 rounded-lg p-5 hover:border-green-400 transition cursor-pointer group">
                     <h3 class="font-bold text-slate-800 flex justify-between items-center">
-                        Bagaimana cara mendaftar membership?
+                        How to join membership?
                         <span class="text-slate-400 group-hover:text-green-500">↓</span>
                     </h3>
                     <p class="text-sm text-slate-500 mt-2 hidden group-hover:block transition-all">
-                        Klik tombol "Join Membership" di atas, isi formulir pendaftaran, dan lakukan pembayaran sesuai instruksi. Akun Anda akan aktif setelah verifikasi admin.
+                        Click the "Join Membership" button above, fill out the registration form, and make the payment as instructed. Your account will be activated after admin verification.
                     </p>
                 </div>
 
                 {{-- FAQ 2 --}}
                 <div class="border border-slate-200 rounded-lg p-5 hover:border-green-400 transition cursor-pointer group">
                     <h3 class="font-bold text-slate-800 flex justify-between items-center">
-                        Metode pembayaran apa yang tersedia?
+                        What payment methods are available?
                         <span class="text-slate-400 group-hover:text-green-500">↓</span>
                     </h3>
                     <p class="text-sm text-slate-500 mt-2 hidden group-hover:block transition-all">
-                        Kami menerima transfer bank ke rekening resmi perusahaan (BCA/Mandiri) yang tertera saat proses checkout.
+                        We accept bank transfers to the official company accounts listed during the checkout process.
                     </p>
                 </div>
 
                 {{-- FAQ 3 --}}
                 <div class="border border-slate-200 rounded-lg p-5 hover:border-green-400 transition cursor-pointer group">
                     <h3 class="font-bold text-slate-800 flex justify-between items-center">
-                        Apakah membership bisa dibatalkan?
+                        Can membership be canceled?
                         <span class="text-slate-400 group-hover:text-green-500">↓</span>
                     </h3>
                     <p class="text-sm text-slate-500 mt-2 hidden group-hover:block transition-all">
-                        Membership berlaku selama 1 tahun. Pembatalan di tengah periode tidak mendapatkan pengembalian dana (refund).
+                        Membership is valid for 1 year. Cancellation during the period does not receive a refund.
                     </p>
                 </div>
             </div>

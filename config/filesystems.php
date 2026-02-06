@@ -44,6 +44,17 @@ return [
             'throw' => false,
         ],
 
+        // --- TAMBAHKAN DISK INI (BRANKAS KITA) ---
+        'secure' => [
+            'driver' => 'local',
+            'root' => storage_path('app/secure_docs'), // Lokasi: storage/app/secure_docs
+            'visibility' => 'private', // Kuncinya di sini
+            'throw' => false,
+            // ARAHKAN URL-NYA KE ROUTE KITA
+            'url' => env('APP_URL').'/secure-files',
+        ],
+        // -----------------------------------------
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

@@ -24,7 +24,7 @@ class AdminPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
-            ->brandName('WFIED Admin')
+            ->brandName('WFIEd Admin')
             ->id('admin')
             ->path('admin')
             ->login()

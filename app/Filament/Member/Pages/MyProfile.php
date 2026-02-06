@@ -30,7 +30,7 @@ class MyProfile extends Page implements HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Pribadi')
+                Forms\Components\Section::make('Personal Information')
                     // ->description('Foto ini akan digunakan pada ID Card Digital Anda.')
                     ->schema([
                         // UPLOAD FOTO PROFIL
@@ -54,12 +54,17 @@ class MyProfile extends Page implements HasForms
                         Forms\Components\TextInput::make('phone')
                             ->tel()
                             ->label('WhatsApp Number'),
+                        Forms\Components\Select::make('country')
+                            ->label('Country')
+                            ->searchable()
+                            ->options(config('countries'))
+                            ->placeholder('Select Country'),
                         
                         Forms\Components\TextInput::make('organization')
                             ->label('Organization / Company'),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Keamanan')
+                Forms\Components\Section::make('Security')
                     ->schema([
                         Forms\Components\TextInput::make('new_password')
                             ->label('New Password')

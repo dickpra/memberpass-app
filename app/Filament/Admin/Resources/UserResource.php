@@ -295,18 +295,36 @@ class UserResource extends Resource
                     ->modalDescription('User akan diaktifkan kembali sampai akhir tahun.')
                     // Muncul jika statusnya TIDAK Active
                     ->visible(fn ($record) => $record->status !== 'active')
-                    ->action(function ($record) {
-                        // Cek kalau tier-nya kosong, set ke GreenCard default
+                    ->action(function (User $record) { // Type hint User agar autocomplete jalan
+                        // 1. Tentukan Tier (Default GreenCard jika kosong)
                         $tier = $record->membership_type ?: 'GreenCard';
-                        
+
+                        // 2. LOGIKA ID: Cek apakah sudah punya ID?
+                        $finalMemberId = $record->member_id;
+
+                        if (empty($finalMemberId)) {
+                            // Jika KOSONG, generate baru pakai fungsi static di Model
+                            // Kita cek apakah tier mengandung kata 'vip' untuk parameter $isVip
+                            $isVip = str_contains(strtolower($tier), 'vip');
+                            
+                            $finalMemberId = User::generateMemberId($isVip);
+                        } 
+                        // Jika TIDAK KOSONG (else), $finalMemberId tetap pakai nilai lama ($record->member_id)
+
+                        // 3. Update Database
                         $record->update([
                             'status' => 'active',
                             'membership_type' => $tier,
                             'join_date' => $record->join_date ?? now(),
-                            'expiry_date' => \Carbon\Carbon::now()->endOfYear(), // Ikut aturan 31 Des
+                            'expiry_date' => \Carbon\Carbon::now()->endOfYear(),
+                            'member_id' => $finalMemberId, // Update ID (Entah itu baru atau lama)
                         ]);
                         
-                        \Filament\Notifications\Notification::make()->title('Member Activated Manually')->success()->send();
+                        \Filament\Notifications\Notification::make()
+                            ->title('Member Activated')
+                            ->body("Status active. ID: $finalMemberId")
+                            ->success()
+                            ->send();
                     }),
 
             ])

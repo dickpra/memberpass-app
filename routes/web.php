@@ -5,8 +5,8 @@ use App\Models\Payment;
 use App\Http\Controllers\HomeController;
 use App\Models\GeneralSetting;
 use App\Models\BankAccount;
-
-
+use App\Http\Controllers\DonationReceiptController;
+use App\Http\Controllers\SecureFileController;
 // Halaman Depan (Landing Page)
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -44,3 +44,18 @@ Route::get('/invoice/{payment}', function (Payment $payment) {
     ]);
 
 })->name('invoice.print');
+
+// ==========================================================
+// 3. ROUTE KHUSUS MEMBER (Harus Login) -> TARUH DISINI
+// ==========================================================
+Route::middleware(['auth'])->group(function () {
+    
+    // Route Download Receipt Donasi
+    Route::get('/member/donations/{donation}/receipt', [DonationReceiptController::class, 'download'])
+        ->name('donation.receipt');
+
+});
+
+Route::get('/secure-files/{filepath}', [SecureFileController::class, 'show'])
+    ->where('filepath', '.*') // <--- MAGIC CODE: Izinkan karakter apa aja termasuk slash
+    ->name('secure.file');

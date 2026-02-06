@@ -319,30 +319,46 @@ class Dashboard extends BaseDashboard implements HasForms, HasActions
                             ->live(),
 
                         // 2. STORAGE PER FOLDER NAMA MEMBER & INVOICE
+                        // --- BAGIAN INI YANG KITA AMANKAN ---
                         FileUpload::make('payment_proofs')
                             ->label('Bukti Transfer')
-                            ->disk('public')
+                            
+                            // 1. GANTI DISK KE SECURE (Wajib)
+                            ->disk('secure') 
+                            
+                            // 2. SET VISIBILITY PRIVATE (Wajib)
+                            ->visibility('private')
+
                             ->live()
-                            // LOGIKA FOLDER DINAMIS
+                            
+                            // 3. LOGIKA FOLDER: payment-proofs/105-budi-santoso/inv-12
                             ->directory(function () {
                                 $user = Auth::user();
                                 
-                                // Ambil Invoice yang sedang aktif
+                                // Ambil Invoice Aktif
                                 $payment = Payment::where('user_id', $user->id)
                                     ->whereIn('status', ['pending_upload', 'waiting_verification', 'payment_rejected'])
                                     ->latest()
                                     ->first();
                                     
-                                // Buat slug nama user (misal: "Budi Santoso" -> "budi-santoso")
-                                $safeName = Str::slug($user->name);
-                                // Ambil ID Invoice
-                                $invoiceId = $payment ? $payment->id : 'temp';
+                                // Format Folder: ID-SlugNama (Biar unik & rapi)
+                                // Contoh: 105-budi-santoso
+                                $userFolder = $user->id . '-' . Str::slug($user->name);
+                                
+                                // ID Invoice
+                                $invoiceId = $payment ? $payment->id : 'unknown';
 
-                                // Hasil: payment-proofs/budi-santoso/inv-105
-                                return "payment-proofs/{$safeName}/inv-{$invoiceId}";
+                                // Hasil Akhir: payment-proofs/105-budi-santoso/inv-12
+                                return "payment-proofs/{$userFolder}/inv-{$invoiceId}";
                             })
+                            
+                            // 4. RENAME FILE (Opsional: Agar nama file bersih)
+                            ->getUploadedFileNameForStorageUsing(function (\Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file) {
+                                return 'proof-' . now()->timestamp . '-' . Str::random(5) . '.' . $file->getClientOriginalExtension();
+                            })
+
                             ->image()
-                            ->preserveFilenames()
+                            ->preserveFilenames(false) // Set false karena kita sudah rename manual di atas
                             ->multiple()
                             ->maxFiles(5)
                             ->required(),

@@ -229,19 +229,24 @@ class PaymentResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('sender_name')
                                     ->label('Sender Name (Input User)')
-                                    ->disabled(), // Ini memang selalu disabled
+                                    ->disabled(),
                                     
                                 Forms\Components\Repeater::make('files')
                                     ->relationship()
                                     ->hiddenLabel()
                                     ->schema([
                                         Forms\Components\FileUpload::make('file_path')
-                                            ->disk('public')
-                                            ->directory('payment-proofs') // Hanya fallback, aslinya pakai logic member
+                                            ->label('Uploaded Proof')
+                                            
+                                            // --- UBAH BAGIAN INI AGAR SAMA DENGAN MEMBER ---
+                                            ->disk('secure')        // <--- Arahkan ke brankas rahasia
+                                            ->visibility('private') // <--- Set private
+                                            // -----------------------------------------------
+
                                             ->image()
-                                            ->openable()
-                                            ->downloadable()
-                                            ->deletable(false) // Admin tidak boleh hapus
+                                            ->openable()     // Bisa diklik (Preview)
+                                            ->downloadable() // Bisa didownload
+                                            ->deletable(false) 
                                             ->columnSpanFull(),
                                     ])
                                     ->addable(false)
